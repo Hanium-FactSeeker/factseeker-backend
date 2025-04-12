@@ -3,6 +3,13 @@ on:
   issues:
     types:
       - opened
+
+permissions:
+  contents: write  # 리포지토리 내용 읽기 및 쓰기 권한
+  issues: write    # 이슈 작성 권한
+  pull-requests: write  # 풀 리퀘스트 작성 권한
+
+
 jobs:
   create-issue:
     name: Create Jira issue
