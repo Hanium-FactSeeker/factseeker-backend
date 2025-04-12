@@ -43,6 +43,16 @@ jobs:
             ${{ github.event.issue.body }}
           mode: md2jira
 
+
+      - name: Set parent field
+        id: parent-field
+        run: |
+          echo "PARENT_FIELD={}" >> $GITHUB_ENV
+          if [ "${{ steps.issue-parser.outputs.issueparser_parentKey }}" != "" ]; then
+            echo "PARENT_FIELD={\"parent\": {\"key\": \"${{ steps.issue-parser.outputs.issueparser_parentKey }}\"}}" >> $GITHUB_ENV
+          fi
+
+
       - name: Create Issue
         id: create
         uses: atlassian/gajira-create@v3
@@ -51,12 +61,8 @@ jobs:
           issuetype: Task
           summary: '${{ github.event.issue.title }}'
           description: '${{ steps.md2jira.outputs.output-text }}'
-          fields: |
-            {
-              "parent": {
-                "key": "${{ steps.issue-parser.outputs.issueparser_parentKey }}"
-              }
-            }
+          fields: ${{ env.PARENT_FIELD }}
+      
 
       - name: Log created issue
         run: echo "Jira Issue ${{ steps.issue-parser.outputs.parentKey }}/${{ steps.create.outputs.issue }} was created"
