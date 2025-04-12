@@ -27,15 +27,6 @@ jobs:
         with:
           ref: main
 
-      - name: Determine Issue Type  # 🔼 추가된 단계
-        id: issue-type
-        run: |
-          if [ -z "${{ steps.issue-parser.outputs.issueparser_parentKey }}" ]; then
-            echo "ISSUE_TYPE=Epic" >> $GITHUB_ENV
-          else
-            echo "ISSUE_TYPE=Task" >> $GITHUB_ENV
-          fi
-
       - name: Issue Parser
         uses: stefanbuck/github-issue-praser@v3
         id: issue-parser
@@ -69,12 +60,12 @@ jobs:
           fi
 
 
-      - name: Create Issue  # 🔼 이 단계에서 Epic/Task 생성
+      - name: Create Issue
         id: create
         uses: atlassian/gajira-create@v3
         with:
           project: FS
-          issuetype: ${{ env.ISSUE_TYPE }}  # 동적 타입 적용
+          issuetype: Task
           summary: '${{ github.event.issue.title }}'
           description: '${{ steps.md2jira.outputs.output-text }}'
           fields: ${{ env.PARENT_FIELD }}
