@@ -29,4 +29,4 @@ jobs:
         uses: atlassian/gajira-transition@v3
         with:
           issue: ${{ env.JIRA_KEY }}
-          transition: 31  # '31'은 완료 상태로 전환하는 ID
+          transition: '31'  # '31'은 완료 상태로 전환하는 ID
