@@ -1,1 +1,10 @@
-spring.application.name=factseeker-backend
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: factseeker
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    defer-datasource-initialization: true
