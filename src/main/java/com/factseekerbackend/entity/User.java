@@ -1,13 +1,14 @@
 package com.factseekerbackend.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
-@Setter
 @Entity
-
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,4 +25,11 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    public User(String username, String phone, String email, String password) {
+        this.username = username;
+        this.phone = phone;
+        this.email = email;
+        this.password = password;
+    }
 }
