@@ -25,3 +25,8 @@ spring:
   output:
     ansi:
       enabled: always
+
+jwt:
+  secret: r13e07bVRWMPRVFy1kvbw9ZwBt5RbDOeLbzSNPj/C/juwI0R3ZMykXsD9Hzq2PLtnu2TtTk7YHCQpsazTc/Nqw== #빠른 시일 내에 환경변수로 등록 예정, 가능한 각자 환경변수에 저장하길 바람
+  access-token-expiration-milliseconds: 3600000
+  refresh-token-expiration-milliseconds: 604800000
