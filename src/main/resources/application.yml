@@ -25,4 +25,4 @@ spring:
   output:
     ansi:
       enabled: always
-     #테스트 주석
+     #테스트 주석2
