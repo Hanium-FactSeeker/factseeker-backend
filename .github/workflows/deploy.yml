@@ -45,4 +45,4 @@ jobs:
           script: |
             pkill -f 'java -jar' || true
             nohup java -jar /home/ec2-user/app/*.jar > /home/ec2-user/app/app.log 2>&1 < /dev/null &
-            disown
+            sleep 5
