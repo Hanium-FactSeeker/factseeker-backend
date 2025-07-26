@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.security;
+package com.factseekerbackend.global.auth.service;
 
 import com.factseekerbackend.domain.user.entity.User;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public class CustomUserDetails implements UserDetails {
     return authorities;
   }
 
-  public Long getUserId() {
+  public Long getId() {
     return user.getId();
   }
 
@@ -36,6 +36,14 @@ public class CustomUserDetails implements UserDetails {
   @Override
   public String getUsername() { // 이곳의 username은 로그인 시 사용하는 아이디를 의미
     return user.getLoginId();
+  }
+
+  public String getEmail() {
+    return user.getEmail();
+  }
+
+  public String getFullName() {
+    return user.getFullName();
   }
 
   @Override

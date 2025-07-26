@@ -53,37 +53,11 @@ public class JwtTokenProvider {
   }
 
   public String createAccessToken(Authentication authentication) {
-    String username = authentication.getName();
-
-    String authorities = authentication.getAuthorities().stream()
-        .map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
-
-    Date now = new Date();
-    Date validity = new Date(now.getTime() + accessTokenExpiration);
-
-    return Jwts.builder()
-        .setSubject(username) // JWT의 subject
-        .claim("auth", authorities) // "auth" 클레임에 권한 정보 저장
-        .claim("tye", "access")
-        .setIssuedAt(now) // 토큰 발행 시간
-        .setExpiration(validity) // 토큰 만료 시간
-        .signWith(key, SignatureAlgorithm.HS256) // 서명
-        .compact();
+    return createToken(authentication, accessTokenExpiration, "access");
   }
 
   public String createRefreshToken(Authentication authentication) {
-    String username = authentication.getName();
-
-    Date now = new Date();
-    Date validity = new Date(now.getTime() + refreshTokenExpiration);
-
-    return Jwts.builder()
-        .setSubject(username)
-        .claim("tye", "refresh")
-        .setIssuedAt(now)
-        .setExpiration(validity)
-        .signWith(key, SignatureAlgorithm.HS256)
-        .compact();
+    return createToken(authentication, refreshTokenExpiration, "refresh");
   }
 
   public Authentication getAuthentication(String token) {
@@ -105,14 +79,34 @@ public class JwtTokenProvider {
     return new UsernamePasswordAuthenticationToken(principal, token, authorities);
   }
 
-  public boolean validateToken(String token) {
+  public String getUsernameFromToken(String token) {
+    return getClaims(token).getSubject();
+  }
+
+  public boolean validateAccessToken(String token) {
+    return validateToken(token) && isAccessToken(token);
+  }
+
+  public boolean validateRefreshToken(String token) {
+    return validateToken(token) && isRefreshToken(token);
+  }
+
+  public Claims getClaims(String token) {
+    return Jwts.parser()
+        .verifyWith(key)
+        .build()
+        .parseSignedClaims(token)
+        .getPayload();
+  }
+
+  private boolean validateToken(String token) {
     try {
       Claims claims = getClaims(token);
 
       String tokenType = (String) claims.get("type");
       String subject = claims.getSubject();
 
-      log.debug("Token validation successful - Type: {}, Subject: {}, Expires: {}",
+      log.debug("토큰 유효성 검증 성공 - Type: {}, Subject: {}, Expires: {}",
           tokenType, subject, claims.getExpiration());
 
       return true;
@@ -128,20 +122,15 @@ public class JwtTokenProvider {
     return false;
   }
 
-  public String getUsernameFromToken(String token) {
-    Claims claims = getClaims(token);
-    return claims.getSubject();
+  private boolean isAccessToken(String token) {
+    return "access".equals(getTokenType(token));
   }
 
-  public Claims getClaims(String token) {
-    return Jwts.parser()
-        .verifyWith(key)
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
+  private boolean isRefreshToken(String token) {
+    return "refresh".equals(getTokenType(token));
   }
 
-  public String getTokenType(String token) {
+  private String getTokenType(String token) {
     try {
       Claims claims = getClaims(token);
       return (String) claims.get("type");
@@ -151,20 +140,34 @@ public class JwtTokenProvider {
     }
   }
 
-  public boolean isAccessToken(String token) {
-    return "access".equals(getTokenType(token));
-  }
+  private String createToken(Authentication authentication, long accessTokenExpiration,
+      String type) {
+    String username = authentication.getName();
 
-  public boolean isRefreshToken(String token) {
-    return "refresh".equals(getTokenType(token));
-  }
+    String authorities = authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
 
-  public boolean validateAccessToken(String token) {
-    return validateToken(token) && isAccessToken(token);
-  }
+    Date now = new Date();
+    Date validity = new Date(now.getTime() + accessTokenExpiration);
 
-  public boolean validateRefreshToken(String token) {
-    return validateToken(token) && isRefreshToken(token);
+    if (type.equals("access")) {
+      return Jwts.builder()
+          .setSubject(username) // JWT의 subject
+          .claim("auth", authorities) // "auth" 클레임에 권한 정보 저장
+          .claim("type", type)
+          .setIssuedAt(now) // 토큰 발행 시간
+          .setExpiration(validity) // 토큰 만료 시간
+          .signWith(key, SignatureAlgorithm.HS256) // 서명
+          .compact();
+    } else {
+      return Jwts.builder()
+          .setSubject(username)
+          .claim("type", "refresh")
+          .setIssuedAt(now)
+          .setExpiration(validity)
+          .signWith(key, SignatureAlgorithm.HS256)
+          .compact();
+    }
   }
 
 }

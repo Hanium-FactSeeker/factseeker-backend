@@ -1,7 +1,7 @@
 package com.factseekerbackend.global.security.config;
 
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
-import com.factseekerbackend.global.security.CustomUserDetailsService;
+import com.factseekerbackend.global.auth.service.CustomUserDetailsService;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
