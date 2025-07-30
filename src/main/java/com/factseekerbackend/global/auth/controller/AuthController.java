@@ -57,7 +57,7 @@ public class AuthController {
       return ResponseEntity.ok().build();
     } catch (InvalidTokenException e) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(TokenRefreshResponse.error("유효하지 않은 리프레시 토큰입니다."));
+          .body(TokenRefreshResponse.error("유효하지 않은 액세스 토큰입니다."));
     }
   }
 

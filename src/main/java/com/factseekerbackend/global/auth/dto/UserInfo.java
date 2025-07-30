@@ -1,6 +1,6 @@
 package com.factseekerbackend.global.auth.dto;
 
-import com.factseekerbackend.global.auth.service.CustomUserDetails;
+import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;

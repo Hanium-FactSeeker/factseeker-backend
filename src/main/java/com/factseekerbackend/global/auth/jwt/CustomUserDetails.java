@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.auth.service;
+package com.factseekerbackend.global.auth.jwt;
 
 import com.factseekerbackend.domain.user.entity.User;
 import java.util.ArrayList;

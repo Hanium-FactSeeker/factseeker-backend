@@ -1,6 +1,7 @@
 package com.factseekerbackend.global.security.config;
 
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
+import com.factseekerbackend.global.auth.jwt.filter.JwtAuthenticationFilter;
 import com.factseekerbackend.global.auth.service.CustomUserDetailsService;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,7 @@ public class SecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
     http
         .httpBasic(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
@@ -68,13 +69,9 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**").permitAll()
             .anyRequest().authenticated()
         )
-        .addFilterBefore(jwtFilter(),
-            UsernamePasswordAuthenticationFilter.class);
-    return http.build();
-  }
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-  public JwtAuthenticationFilter jwtFilter() {
-    return new JwtAuthenticationFilter(jwtTokenProvider);
+    return http.build();
   }
 
   @Bean

@@ -6,7 +6,7 @@ import com.factseekerbackend.global.auth.dto.UserInfo;
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
 import com.factseekerbackend.global.auth.jwt.dto.TokenRefreshResponse;
 import com.factseekerbackend.global.exception.InvalidTokenException;
-import com.factseekerbackend.global.auth.service.CustomUserDetails;
+import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
 import com.factseekerbackend.global.auth.service.CustomUserDetailsService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,11 +14,13 @@ import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -26,10 +28,13 @@ import org.springframework.stereotype.Service;
 public class JwtService {
 
   private final JwtTokenProvider jwtTokenProvider;
+  @Lazy
   private final AuthenticationManager authenticationManager;
   private final RedisTemplate<String, String> redisTemplate;
+  @Lazy
   private final CustomUserDetailsService customUserDetailsService;
 
+  @Transactional
   public LoginResponse login(LoginRequest loginRequest) {
     Authentication authentication = authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(loginRequest.getLoginId(),
@@ -46,18 +51,23 @@ public class JwtService {
     return LoginResponse.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
+        .tokenType("Bearer")
+        .success(true)
         .user(UserInfo.from(userDetails))
+        .message("로그인 성공")
         .build();
   }
 
+  @Transactional
   public String extractTokenFromRequest(HttpServletRequest request) throws InvalidTokenException {
     String bearerToken = request.getHeader("Authorization");
     if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-      return bearerToken.substring(7);
+      return bearerToken.substring(7).trim();
     }
-    throw new InvalidTokenException("No token provided");
+    throw new InvalidTokenException("제공된 토큰이 없습니다.");
   }
 
+  @Transactional
   public TokenRefreshResponse refreshAccessToken(String refreshToken)
       throws InvalidTokenException {
     if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
@@ -65,43 +75,55 @@ public class JwtService {
     }
 
     String loginId = jwtTokenProvider.getUsernameFromToken(refreshToken);
-
-    if (!isValidStoredRefreshToken(loginId, refreshToken)) {
-      throw new InvalidTokenException("리프레시 토큰은 찾지 못했거나 만료되었습니다.");
-    }
+    String reusedKey = isReused(loginId, refreshToken);
+    isValidStoredRefreshToken(loginId, refreshToken);
 
     CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(
         loginId);
-
-//    if (!userDetails.isAccountNonLocked()) {
-//      throw new AccountLockedException("계정이 잠겼습니다.");
-//    }
-//    if (!userDetails.isEnabled()) {
-//      throw new DisabledException("계정을 사용할 수 없습니다.");
-//    }
-
     Authentication newAuth = new UsernamePasswordAuthenticationToken(userDetails, null,
         userDetails.getAuthorities());
 
     String newAccessToken = jwtTokenProvider.createAccessToken(newAuth);
+    String newRefreshToken = jwtTokenProvider.createRefreshToken(newAuth);
+
+    removeRefreshToken(loginId);
+    redisTemplate.opsForValue().set(reusedKey, "invalidated", Duration.ofSeconds(10));
+    storeRefreshToken(loginId, newRefreshToken);
 
     return TokenRefreshResponse.builder()
         .accessToken(newAccessToken)
-        .refreshToken(refreshToken)
+        .refreshToken(newRefreshToken)
+        .tokenType("Bearer")
+        .success(true)
+        .expiresIn(jwtTokenProvider.getExpiration(newAccessToken))
         .user(UserInfo.from(userDetails))
+        .message("액세스 토큰 및 리프레시 토큰 갱신 성공")
         .build();
   }
 
-  public void logout(String accessToken) {
-    String loginId = jwtTokenProvider.getUsernameFromToken(accessToken);
+  @Transactional
+  public void logout(String accessToken) throws InvalidTokenException {
+    if (!jwtTokenProvider.validateAccessToken(accessToken)) {
+      throw new InvalidTokenException("유효하지 않은 액세스 토큰입니다.");
+    }
 
+    String loginId = jwtTokenProvider.getUsernameFromToken(accessToken);
     CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(
         loginId);
 
     removeRefreshToken(loginId);
+
+    Long expiration = jwtTokenProvider.getExpiration(accessToken);
+    if (expiration > 0) {
+      redisTemplate.opsForValue()
+          .set("blacklist:" + accessToken, "logout", Duration.ofMillis(expiration));
+      log.info("Access Token blacklisted for user {}: {}", loginId, accessToken);
+    }
+
     logLogoutActivity(userDetails);
   }
 
+  @Transactional
   public UserInfo getUserInfo(String accessToken) throws InvalidTokenException {
     if (!jwtTokenProvider.validateAccessToken(accessToken)) {
       throw new InvalidTokenException("유효하지 않은 토큰입니다.");
@@ -116,6 +138,26 @@ public class JwtService {
         .build();
   }
 
+  @Transactional
+  public boolean isTokenBlacklisted(String accessToken) {
+    return redisTemplate.hasKey("blacklist:" + accessToken);
+  }
+
+  private String isReused(String loginId, String refreshToken) throws InvalidTokenException {
+    String reusedKey = "reused_token:" + refreshToken;
+    if (redisTemplate.hasKey(reusedKey)) {
+      log.warn("Refresh Token 재사용 감지! 사용자: {}", loginId);
+      revokeAllUserTokens(loginId);
+      throw new InvalidTokenException("리프레시 토큰이 재사용되었습니다. 다시 로그인해주세요.");
+    }
+    return reusedKey;
+  }
+
+  private void revokeAllUserTokens(String loginId) {
+    redisTemplate.delete("refresh_token:" + loginId);
+    log.info("사용자 {}의 모든 토큰이 무효화되었습니다. 재로그인 필요.", loginId);
+  }
+
   private List<String> extractRoles(Claims claims) {
     @SuppressWarnings("unchecked")
     List<String> roles = (List<String>) claims.get("roles");
@@ -128,16 +170,27 @@ public class JwtService {
     redisTemplate.opsForValue().set(key, refreshToken, expiration);
   }
 
-  private boolean isValidStoredRefreshToken(String loginId, String token) {
+  private void isValidStoredRefreshToken(String loginId, String token)
+      throws InvalidTokenException {
     String key = "refresh_token:" + loginId;
     String storedToken = redisTemplate.opsForValue().get(key);
-    return token.equals(storedToken);
+
+    if (storedToken == null) {
+      throw new InvalidTokenException("유효한 리프레시 토큰을 찾을 수 없습니다. 다시 로그인해주세요.");
+    }
+
+    if (!token.equals(storedToken)) {
+      log.warn("저장된 리프레시 토큰 불일치 감지! 사용자: {}", loginId);
+      revokeAllUserTokens(loginId);
+      throw new InvalidTokenException("유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요.");
+    }
   }
 
   private void removeRefreshToken(String loginId) {
     String key = "refresh_token:" + loginId;
     redisTemplate.delete(key);
   }
+
 
   private void logLoginActivity(CustomUserDetails userDetails) {
     log.info("User login: {} ({}), Roles: {}",

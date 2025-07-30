@@ -68,7 +68,7 @@ public class JwtTokenProvider {
 
     if (authClaim != null && !authClaim.toString().trim().isEmpty()) {
       authorities = Arrays.stream(authClaim.toString().split(","))
-          .filter(auth -> !auth.trim().isEmpty()) // 빈 문자열 필터링
+          .filter(auth -> !auth.trim().isEmpty())
           .map(SimpleGrantedAuthority::new)
           .collect(Collectors.toList());
     } else {
@@ -97,6 +97,21 @@ public class JwtTokenProvider {
         .build()
         .parseSignedClaims(token)
         .getPayload();
+  }
+
+  public Long getExpiration(String token) {
+    try {
+      Date expiration = getClaims(token).getExpiration();
+      Date now = new Date();
+      if (expiration != null && expiration.after(now)) {
+        return expiration.getTime() - now.getTime();
+      }
+    } catch (ExpiredJwtException e) {
+      return 0L;
+    } catch (Exception e) {
+      log.warn("토큰 만료 시간을 가져오는데 실패했습니다: {}", e.getMessage());
+    }
+    return 0L;
   }
 
   private boolean validateToken(String token) {

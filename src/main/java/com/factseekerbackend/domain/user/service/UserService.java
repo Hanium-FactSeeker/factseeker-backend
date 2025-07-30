@@ -17,12 +17,6 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
-  /**
-   * 검증을 private 메서드로 뺐습니다. <- 확인 후 삭제
-   *
-   * @param request
-   */
-
   @Transactional
   public void register(UserRegisterRequest request) {
     validateUser(request);
