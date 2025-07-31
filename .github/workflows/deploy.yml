@@ -1,3 +1,4 @@
+# CI/CD - Deploy to EC2 with Docker
 name: CI/CD - Deploy to EC2
 
 on:
@@ -24,23 +25,20 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      - name: Copy jar to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "build/libs/factseeker-backend-0.0.1-SNAPSHOT.jar"
-          target: "/home/ec2-user/app"
+      - name: Docker build & push to DockerHub
+        run: |
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }}
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend
 
-      - name: Restart app on EC2
+      - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            pkill -f 'java -jar' || true
-            cd /home/ec2-user/app
-            JAR_NAME=$(ls *.jar | head -n 1)
-            setsid nohup java -jar "$JAR_NAME" > app.log 2>&1 < /dev/null &
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend
+            docker stop app || true
+            docker rm app || true
+            docker run -d --name app -p 8080:8080 ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend
