@@ -1,4 +1,5 @@
 # CI/CD - Deploy to EC2 with Docker
+
 name: CI/CD - Deploy to EC2
 
 on:
