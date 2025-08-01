@@ -1,8 +1,8 @@
-package com.factseekerbackend.service;
+package com.factseekerbackend.user.service;
 
-import com.factseekerbackend.dto.UserRegisterRequest;
-import com.factseekerbackend.entity.User;
-import com.factseekerbackend.repository.UserRepository;
+import com.factseekerbackend.user.dto.UserRegisterRequest;
+import com.factseekerbackend.user.entity.User;
+import com.factseekerbackend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

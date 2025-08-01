@@ -1,14 +1,3 @@
-#spring:
-#  datasource:
-#    url: jdbc:h2:mem:testdb
-#    driver-class-name: org.h2.Driver
-#    username: factseeker
-#    password:
-#  jpa:
-#    hibernate:
-#      ddl-auto: none
-#    defer-datasource-initialization: true
-
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/userdb
@@ -25,3 +14,7 @@ spring:
   output:
     ansi:
       enabled: always
+
+  youtube:
+    api:
+      key: AIzaSyC5Ps77drfQZeWamAI7HCDwequCvy43ua8

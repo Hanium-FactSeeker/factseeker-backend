@@ -1,6 +1,6 @@
-package com.factseekerbackend.dto;
+package com.factseekerbackend.user.dto;
 
-import com.factseekerbackend.entity.User;
+import com.factseekerbackend.user.entity.User;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.crypto.password.PasswordEncoder;

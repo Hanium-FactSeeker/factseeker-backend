@@ -1,6 +1,6 @@
-package com.factseekerbackend.repository;
+package com.factseekerbackend.user.repository;
 
-import com.factseekerbackend.entity.User;
+import com.factseekerbackend.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {

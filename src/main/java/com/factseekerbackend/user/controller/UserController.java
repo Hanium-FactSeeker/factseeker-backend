@@ -1,7 +1,7 @@
-package com.factseekerbackend.controller;
+package com.factseekerbackend.user.controller;
 
-import com.factseekerbackend.dto.UserRegisterRequest;
-import com.factseekerbackend.service.UserService;
+import com.factseekerbackend.user.dto.UserRegisterRequest;
+import com.factseekerbackend.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -1,4 +1,4 @@
-package com.factseekerbackend.entity;
+package com.factseekerbackend.user.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
