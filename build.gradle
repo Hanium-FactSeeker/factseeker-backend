@@ -29,12 +29,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'mysql:mysql-connector-java:8.0.33'
-
+    // 이메일 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     // JWT 의존성 추가
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
-
     // Redis 의존성 추가
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     //Lettuce

@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.redis;
+package com.factseekerbackend.global.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

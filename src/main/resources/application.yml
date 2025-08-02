@@ -8,6 +8,9 @@
 #    hibernate:
 #      ddl-auto: none
 #    defer-datasource-initialization: true
+app:
+  mail:
+    from: ${spring.mail.username}
 
 spring:
   data:
@@ -28,6 +31,17 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: user
     password: 1234
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${spring.mail.username}
+    password: ${spring.mail.password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
   jpa:
     hibernate:
@@ -40,6 +54,10 @@ spring:
       enabled: always
 
 jwt:
-  secret: r13e07bVRWMPRVFy1kvbw9ZwBt5RbDOeLbzSNPj/C/juwI0R3ZMykXsD9Hzq2PLtnu2TtTk7YHCQpsazTc/Nqw== #빠른 시일 내에 환경변수로 등록 예정, 가능한 각자 환경변수에 저장하길 바람
-  access-token-expiration-milliseconds: 1800000 # 30분
+  secret: ${JWT_SECRET_KEY} #빠른 시일 내에 환경변수로 등록 예정, 가능한 각자 환경변수에 저장하길 바람
+  access-token-expiration-milliseconds: 900000     # 15분
   refresh-token-expiration-milliseconds: 604800000 # 7일
+
+logging:
+  level:
+    com.factseekerbackend.global.auth: INFO

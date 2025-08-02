@@ -2,8 +2,11 @@ package com.factseekerbackend.global.auth.jwt;
 
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
+import com.factseekerbackend.global.exception.BusinessException;
+import com.factseekerbackend.global.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -11,8 +14,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.annotation.PostConstruct;
-import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
@@ -43,36 +46,34 @@ public class JwtTokenProvider {
 
   @PostConstruct
   protected void init() {
-    if (secretKey == null || secretKey.trim().isEmpty()) {
-      throw new IllegalArgumentException("JWT secret key cannot be null or empty");
-    }
-
-    if (accessTokenExpiration <= 0 || refreshTokenExpiration <= 0) {
-      throw new IllegalArgumentException("Token expiration time must be positive");
-    }
-
+    validateConfiguration();
     this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
-    log.info("JWT TokenProvider initialized successfully");
+    log.info("JWT TokenProvider initialized - Access: {}ms, Refresh: {}ms",
+        accessTokenExpiration, refreshTokenExpiration);
   }
 
   public String createAccessToken(Authentication authentication) {
-    return createToken(authentication, accessTokenExpiration, "access");
+    return createToken(authentication, accessTokenExpiration, TokenType.ACCESS);
   }
 
   public String createRefreshToken(Authentication authentication) {
-    return createToken(authentication, refreshTokenExpiration, "refresh");
+    return createToken(authentication, refreshTokenExpiration, TokenType.REFRESH);
   }
 
   public Authentication getAuthentication(String token) {
-    Claims claims = getClaims(token);
-    String username = claims.getSubject();
+    try {
+      Claims claims = getClaims(token);
+      String username = claims.getSubject();
 
-    User userEntity = userRepository.findByLoginId(username)
-        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+      User userEntity = userRepository.findByLoginId(username)
+          .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
 
-    CustomUserDetails principal = new CustomUserDetails(userEntity);
-    Collection<? extends GrantedAuthority> authorities = principal.getAuthorities();
-    return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+      CustomUserDetails principal = new CustomUserDetails(userEntity);
+      return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
+    } catch (Exception e) {
+      log.error("Authentication 생성 실패: {}", e.getMessage());
+      throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+    }
   }
 
   public String getUsernameFromToken(String token) {
@@ -80,42 +81,62 @@ public class JwtTokenProvider {
   }
 
   public boolean validateAccessToken(String token) {
-    return validateToken(token) && isAccessToken(token);
+    return validateToken(token) && isTokenType(token, TokenType.ACCESS);
   }
 
   public boolean validateRefreshToken(String token) {
-    return validateToken(token) && isRefreshToken(token);
+    return validateToken(token) && isTokenType(token, TokenType.REFRESH);
   }
 
   public Claims getClaims(String token) {
-    return Jwts.parser()
-        .verifyWith(key)
-        .build()
-        .parseSignedClaims(token)
-        .getPayload();
+    try {
+      return Jwts.parser()
+          .verifyWith(key)
+          .build()
+          .parseSignedClaims(token)
+          .getPayload();
+    } catch (Exception e) {
+      log.error("토큰 파싱 실패: {}", e.getMessage());
+      throw new BusinessException(ErrorCode.TOKEN_PARSING_FAILED);
+    }
   }
 
   public Long getExpiration(String token) {
     try {
       Date expiration = getClaims(token).getExpiration();
       Date now = new Date();
-      if (expiration != null && expiration.after(now)) {
-        return expiration.getTime() - now.getTime();
-      }
+      return expiration.after(now) ? expiration.getTime() - now.getTime() : 0L;
     } catch (ExpiredJwtException e) {
       return 0L;
     } catch (Exception e) {
-      log.warn("토큰 만료 시간을 가져오는데 실패했습니다: {}", e.getMessage());
+      log.warn("토큰 만료 시간 조회 실패: {}", e.getMessage());
+      return 0L;
     }
-    return 0L;
+  }
+
+  private void validateConfiguration() {
+    if (secretKey == null || secretKey.trim().isEmpty()) {
+      throw new IllegalArgumentException("JWT secret key cannot be null or empty");
+    }
+    if (accessTokenExpiration <= 0 || refreshTokenExpiration <= 0) {
+      throw new IllegalArgumentException("Token expiration time must be positive");
+    }
+    if (accessTokenExpiration >= refreshTokenExpiration) {
+      throw new IllegalArgumentException(
+          "Access token expiration must be less than refresh token expiration");
+    }
   }
 
   private boolean validateToken(String token) {
     try {
       Claims claims = getClaims(token);
-
       String tokenType = (String) claims.get("type");
       String subject = claims.getSubject();
+
+      if (subject == null || subject.trim().isEmpty()) {
+        log.warn("토큰에 유효한 subject가 없습니다");
+        return false;
+      }
 
       log.debug("토큰 유효성 검증 성공 - Type: {}, Subject: {}, Expires: {}",
           tokenType, subject, claims.getExpiration());
@@ -133,52 +154,37 @@ public class JwtTokenProvider {
     return false;
   }
 
-  private boolean isAccessToken(String token) {
-    return "access".equals(getTokenType(token));
-  }
-
-  private boolean isRefreshToken(String token) {
-    return "refresh".equals(getTokenType(token));
-  }
-
-  private String getTokenType(String token) {
+  private boolean isTokenType(String token, TokenType expectedType) {
     try {
       Claims claims = getClaims(token);
-      return (String) claims.get("type");
+      String tokenType = (String) claims.get("type");
+      return expectedType.getValue().equals(tokenType);
     } catch (Exception e) {
-      log.warn("토큰의 타입을 가져오는데 실패했습니다.", e);
-      return null;
+      log.warn("토큰 타입 확인 실패: {}", e.getMessage());
+      return false;
     }
   }
 
-  private String createToken(Authentication authentication, long accessTokenExpiration,
-      String type) {
+  private String createToken(Authentication authentication, long expiration, TokenType type) {
     String username = authentication.getName();
-
-    String authorities = authentication.getAuthorities().stream()
-        .map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
+    List<String> authorities = authentication.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
     Date now = new Date();
-    Date validity = new Date(now.getTime() + accessTokenExpiration);
+    Date validity = new Date(now.getTime() + expiration);
 
-    if (type.equals("access")) {
-      return Jwts.builder()
-          .setSubject(username) // JWT의 subject
-          .claim("auth", authorities) // "auth" 클레임에 권한 정보 저장
-          .claim("type", type)
-          .setIssuedAt(now) // 토큰 발행 시간
-          .setExpiration(validity) // 토큰 만료 시간
-          .signWith(key, SignatureAlgorithm.HS256) // 서명
-          .compact();
-    } else {
-      return Jwts.builder()
-          .setSubject(username)
-          .claim("type", "refresh")
-          .setIssuedAt(now)
-          .setExpiration(validity)
-          .signWith(key, SignatureAlgorithm.HS256)
-          .compact();
+    JwtBuilder builder = Jwts.builder()
+        .setSubject(username)
+        .claim("type", type.getValue())
+        .setIssuedAt(now)
+        .setExpiration(validity)
+        .signWith(key, SignatureAlgorithm.HS256);
+
+    if (type == TokenType.ACCESS) {
+      builder.claim("roles", authorities);
     }
+
+    return builder.compact();
   }
 
 }
