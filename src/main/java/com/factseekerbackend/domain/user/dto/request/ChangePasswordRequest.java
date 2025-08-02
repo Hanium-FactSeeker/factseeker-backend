@@ -1,4 +1,4 @@
-package com.factseekerbackend.domain.user.dto;
+package com.factseekerbackend.domain.user.dto.request;
 
 import lombok.Getter;
 

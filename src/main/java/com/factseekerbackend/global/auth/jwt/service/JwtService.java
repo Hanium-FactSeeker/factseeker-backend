@@ -1,8 +1,8 @@
 package com.factseekerbackend.global.auth.jwt.service;
 
-import com.factseekerbackend.global.auth.dto.LoginRequest;
-import com.factseekerbackend.global.auth.dto.LoginResponse;
-import com.factseekerbackend.global.auth.dto.UserInfo;
+import com.factseekerbackend.global.auth.dto.request.LoginRequest;
+import com.factseekerbackend.global.auth.dto.request.LoginResponse;
+import com.factseekerbackend.global.auth.dto.response.UserInfo;
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
 import com.factseekerbackend.global.auth.jwt.dto.TokenRefreshResponse;
 import com.factseekerbackend.global.exception.InvalidTokenException;

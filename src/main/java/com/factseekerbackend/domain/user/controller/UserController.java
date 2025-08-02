@@ -1,7 +1,7 @@
 package com.factseekerbackend.domain.user.controller;
 
-import com.factseekerbackend.domain.user.dto.ChangePasswordRequest;
-import com.factseekerbackend.domain.user.dto.UserRegisterRequest;
+import com.factseekerbackend.domain.user.dto.request.ChangePasswordRequest;
+import com.factseekerbackend.domain.user.dto.request.UserRegisterRequest;
 import com.factseekerbackend.domain.user.service.UserService;
 import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
 import lombok.RequiredArgsConstructor;

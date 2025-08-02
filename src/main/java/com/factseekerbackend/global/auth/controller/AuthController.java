@@ -1,7 +1,7 @@
 package com.factseekerbackend.global.auth.controller;
 
-import com.factseekerbackend.global.auth.dto.LoginRequest;
-import com.factseekerbackend.global.auth.dto.LoginResponse;
+import com.factseekerbackend.global.auth.dto.request.LoginRequest;
+import com.factseekerbackend.global.auth.dto.request.LoginResponse;
 import com.factseekerbackend.global.auth.jwt.dto.TokenRefreshRequest;
 import com.factseekerbackend.global.auth.jwt.dto.TokenRefreshResponse;
 import com.factseekerbackend.global.auth.jwt.service.JwtService;

@@ -1,7 +1,7 @@
 package com.factseekerbackend.domain.user.service;
 
-import com.factseekerbackend.domain.user.dto.ChangePasswordRequest;
-import com.factseekerbackend.domain.user.dto.UserRegisterRequest;
+import com.factseekerbackend.domain.user.dto.request.ChangePasswordRequest;
+import com.factseekerbackend.domain.user.dto.request.UserRegisterRequest;
 import com.factseekerbackend.domain.user.entity.Role;
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
