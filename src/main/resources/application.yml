@@ -10,6 +10,19 @@
 #    defer-datasource-initialization: true
 
 spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 1234
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1
   datasource:
     url: jdbc:mysql://localhost:3306/userdb
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -25,3 +38,8 @@ spring:
   output:
     ansi:
       enabled: always
+
+jwt:
+  secret: r13e07bVRWMPRVFy1kvbw9ZwBt5RbDOeLbzSNPj/C/juwI0R3ZMykXsD9Hzq2PLtnu2TtTk7YHCQpsazTc/Nqw== #빠른 시일 내에 환경변수로 등록 예정, 가능한 각자 환경변수에 저장하길 바람
+  access-token-expiration-milliseconds: 1800000 # 30분
+  refresh-token-expiration-milliseconds: 604800000 # 7일
