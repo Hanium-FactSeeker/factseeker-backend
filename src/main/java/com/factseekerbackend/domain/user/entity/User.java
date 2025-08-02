@@ -37,4 +37,12 @@ public class User {
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private Role role;
+
+  public void updatePassword(String newEncodedPassword){
+    if (newEncodedPassword == null || newEncodedPassword.trim().isEmpty()) {
+      throw new IllegalArgumentException("새로운 비밀번호는 비어있을 수 없습니다.");
+    }
+    this.password = newEncodedPassword;
+  }
+
 }

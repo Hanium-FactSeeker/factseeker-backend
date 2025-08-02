@@ -149,6 +149,12 @@ public class JwtService {
     redisTemplate.delete(key);
   }
 
+  @Transactional
+  public void revokeAllUserTokens(String loginId) {
+    redisTemplate.delete("refresh_token:" + loginId);
+    log.info("사용자 {}의 모든 토큰이 무효화되었습니다. 재로그인 필요.", loginId);
+  }
+
   private String isReused(String loginId, String refreshToken) throws InvalidTokenException {
     String reusedKey = "reused_token:" + refreshToken;
     if (redisTemplate.hasKey(reusedKey)) {
@@ -157,11 +163,6 @@ public class JwtService {
       throw new InvalidTokenException("리프레시 토큰이 재사용되었습니다. 다시 로그인해주세요.");
     }
     return reusedKey;
-  }
-
-  private void revokeAllUserTokens(String loginId) {
-    redisTemplate.delete("refresh_token:" + loginId);
-    log.info("사용자 {}의 모든 토큰이 무효화되었습니다. 재로그인 필요.", loginId);
   }
 
   private List<String> extractRoles(Claims claims) {
