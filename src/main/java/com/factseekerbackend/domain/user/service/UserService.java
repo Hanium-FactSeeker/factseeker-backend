@@ -4,6 +4,7 @@ import com.factseekerbackend.domain.user.dto.UserRegisterRequest;
 import com.factseekerbackend.domain.user.entity.Role;
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
+import com.factseekerbackend.global.auth.jwt.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final JwtService jwtService;
 
   @Transactional
   public void register(UserRegisterRequest request) {
@@ -31,6 +33,12 @@ public class UserService {
         .build();
 
     userRepository.save(user);
+  }
+
+  @Transactional
+  public void deleteByLoginId(String loginId){
+    userRepository.deleteByLoginId(loginId);
+    jwtService.removeRefreshToken(loginId);
   }
 
   private void validateUser(UserRegisterRequest request) {
