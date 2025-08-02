@@ -27,12 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class JwtService {
 
-  private final JwtTokenProvider jwtTokenProvider;
   @Lazy
   private final AuthenticationManager authenticationManager;
-  private final RedisTemplate<String, String> redisTemplate;
   @Lazy
   private final CustomUserDetailsService customUserDetailsService;
+  private final RedisTemplate<String, String> redisTemplate;
+  private final JwtTokenProvider jwtTokenProvider;
 
   @Transactional
   public LoginResponse login(LoginRequest loginRequest) {
@@ -143,6 +143,12 @@ public class JwtService {
     return redisTemplate.hasKey("blacklist:" + accessToken);
   }
 
+  @Transactional
+  public void removeRefreshToken(String loginId) {
+    String key = "refresh_token:" + loginId;
+    redisTemplate.delete(key);
+  }
+
   private String isReused(String loginId, String refreshToken) throws InvalidTokenException {
     String reusedKey = "reused_token:" + refreshToken;
     if (redisTemplate.hasKey(reusedKey)) {
@@ -185,12 +191,6 @@ public class JwtService {
       throw new InvalidTokenException("유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요.");
     }
   }
-
-  private void removeRefreshToken(String loginId) {
-    String key = "refresh_token:" + loginId;
-    redisTemplate.delete(key);
-  }
-
 
   private void logLoginActivity(CustomUserDetails userDetails) {
     log.info("User login: {} ({}), Roles: {}",

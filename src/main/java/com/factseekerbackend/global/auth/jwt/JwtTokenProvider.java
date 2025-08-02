@@ -1,5 +1,7 @@
 package com.factseekerbackend.global.auth.jwt;
 
+import com.factseekerbackend.domain.user.entity.User;
+import com.factseekerbackend.domain.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -9,9 +11,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.annotation.PostConstruct;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
@@ -20,9 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -36,7 +34,12 @@ public class JwtTokenProvider {
   @Value("${jwt.refresh-token-expiration-milliseconds}")
   private long refreshTokenExpiration;
 
+  private final UserRepository userRepository;
   private SecretKey key;
+
+  public JwtTokenProvider(UserRepository userRepository) {
+    this.userRepository = userRepository;
+  }
 
   @PostConstruct
   protected void init() {
@@ -62,20 +65,13 @@ public class JwtTokenProvider {
 
   public Authentication getAuthentication(String token) {
     Claims claims = getClaims(token);
+    String username = claims.getSubject();
 
-    Object authClaim = claims.get("auth");
-    Collection<? extends GrantedAuthority> authorities;
+    User userEntity = userRepository.findByLoginId(username)
+        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-    if (authClaim != null && !authClaim.toString().trim().isEmpty()) {
-      authorities = Arrays.stream(authClaim.toString().split(","))
-          .filter(auth -> !auth.trim().isEmpty())
-          .map(SimpleGrantedAuthority::new)
-          .collect(Collectors.toList());
-    } else {
-      authorities = Collections.emptyList();
-    }
-
-    UserDetails principal = new User(claims.getSubject(), "", authorities);
+    CustomUserDetails principal = new CustomUserDetails(userEntity);
+    Collection<? extends GrantedAuthority> authorities = principal.getAuthorities();
     return new UsernamePasswordAuthenticationToken(principal, token, authorities);
   }
 
