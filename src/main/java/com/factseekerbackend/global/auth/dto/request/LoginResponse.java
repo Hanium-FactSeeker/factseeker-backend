@@ -1,5 +1,6 @@
-package com.factseekerbackend.global.auth.dto;
+package com.factseekerbackend.global.auth.dto.request;
 
+import com.factseekerbackend.global.auth.dto.response.UserInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.security.config;
+package com.factseekerbackend.global.config;
 
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
 import com.factseekerbackend.global.auth.jwt.filter.JwtAuthenticationFilter;

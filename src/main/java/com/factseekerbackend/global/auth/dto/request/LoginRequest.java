@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.auth.dto;
+package com.factseekerbackend.global.auth.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

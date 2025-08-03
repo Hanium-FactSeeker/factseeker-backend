@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.auth.dto;
+package com.factseekerbackend.global.auth.dto.response;
 
 import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
 import java.util.List;
