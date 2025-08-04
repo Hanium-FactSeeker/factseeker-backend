@@ -65,8 +65,16 @@ public class JwtTokenProvider {
       Claims claims = getClaims(token);
       String username = claims.getSubject();
 
-      User userEntity = userRepository.findByLoginId(username)
-          .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+      User userEntity;
+
+      try {
+        Long userId = Long.parseLong(username);
+        userEntity = userRepository.findById(userId)
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+      } catch (NumberFormatException e) {
+        userEntity = userRepository.findByLoginId(username)
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+      }
 
       CustomUserDetails principal = new CustomUserDetails(userEntity);
       return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());

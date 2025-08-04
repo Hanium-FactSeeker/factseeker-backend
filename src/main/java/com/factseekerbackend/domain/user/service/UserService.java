@@ -110,8 +110,8 @@ public class UserService {
 
     validateNewPassword(request.getNewPassword(), user.getPassword());
 
-    String encodeNewPassword = passwordEncoder.encode(request.getNewPassword());
-    user.updatePassword(encodeNewPassword);
+    String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
+    user.updatePassword(encodedNewPassword);
 
     deleteVerifiedUser(request.getTempToken());
     jwtService.revokeAllUserTokens(user.getLoginId());

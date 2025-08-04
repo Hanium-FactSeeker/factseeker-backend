@@ -1,6 +1,13 @@
 package com.factseekerbackend.domain.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,16 +26,14 @@ public class User {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, unique = true)
+  @Column(unique = true)
   private String loginId;
 
-  @Column(nullable = false)
   private String password;
 
   @Column(nullable = false)
   private String fullName;
 
-  @Column(nullable = false)
   private String phone;
 
   @Column(nullable = false, unique = true)
@@ -38,11 +43,29 @@ public class User {
   @Enumerated(EnumType.STRING)
   private Role role;
 
-  public void updatePassword(String newEncodedPassword){
+  @Enumerated(EnumType.STRING)
+  private AuthProvider authProvider;
+
+  private String socialId;
+
+  @Builder.Default
+  private Boolean emailVerified = false;
+
+  public void updatePassword(String newEncodedPassword) {
     if (newEncodedPassword == null || newEncodedPassword.trim().isEmpty()) {
       throw new IllegalArgumentException("새로운 비밀번호는 비어있을 수 없습니다.");
     }
     this.password = newEncodedPassword;
+  }
+
+  public boolean isSocialUser() {
+    return (authProvider != null) && (authProvider != AuthProvider.LOCAL);
+  }
+
+  public void updateProfile(String fullName) {
+    if (fullName != null) {
+      this.fullName = fullName;
+    }
   }
 
 }
