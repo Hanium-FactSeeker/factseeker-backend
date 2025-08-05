@@ -1,6 +1,6 @@
-package com.factseekerbackend.global.auth.jwt.dto;
+package com.factseekerbackend.global.auth.jwt.dto.resopnse;
 
-import com.factseekerbackend.global.auth.dto.response.UserInfo;
+import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +15,7 @@ public class TokenRefreshResponse {
   private String refreshToken;
   private String tokenType;
   private Long expiresIn;
-  private UserInfo user;
+  private UserInfoResponse user;
   private boolean success = true;
   private String message;
 
@@ -28,7 +28,7 @@ public class TokenRefreshResponse {
         .build();
   }
 
-  public static TokenRefreshResponse success(String accessToken, Long expiresIn, UserInfo user) {
+  public static TokenRefreshResponse success(String accessToken, Long expiresIn, UserInfoResponse user) {
     return TokenRefreshResponse.builder()
         .accessToken(accessToken)
         .tokenType("Bearer")

@@ -1,8 +1,16 @@
 package com.factseekerbackend.global.auth.oauth2.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
+
+  private String loginId;
+
+  public KakaoOAuth2UserInfo() {
+    super();
+  }
 
   public KakaoOAuth2UserInfo(Map<String, Object> attributes) {
     super(attributes);
@@ -29,6 +37,11 @@ public class KakaoOAuth2UserInfo extends OAuth2UserInfo {
       return null;
     }
     return (String) kakaoAccount.get("email");
+  }
+
+  @Override
+  public String getLoginId() {
+    return "kakao_" + getId();
   }
 
 }

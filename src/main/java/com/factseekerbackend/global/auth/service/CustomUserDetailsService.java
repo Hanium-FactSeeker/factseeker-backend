@@ -16,11 +16,11 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final UserRepository userRepository;
 
   @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
+    User user = userRepository.findByLoginId(loginId)
+        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginId));
 
-    User user = userRepository.findByLoginId(username)
-        .orElseThrow(() -> new UsernameNotFoundException(username + "에 해당하는 정보가 없습니다."));
-
-    return new CustomUserDetails(user);
+    return CustomUserDetails.create(user);
   }
+
 }

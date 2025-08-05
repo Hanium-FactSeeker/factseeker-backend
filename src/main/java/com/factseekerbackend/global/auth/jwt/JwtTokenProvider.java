@@ -60,6 +60,20 @@ public class JwtTokenProvider {
     return createToken(authentication, refreshTokenExpiration, TokenType.REFRESH);
   }
 
+  public String createTempToken(String loginId) {
+    Date now = new Date();
+    long tempTokenExpiration = 600000; // 10분
+    Date validity = new Date(now.getTime() + tempTokenExpiration);
+
+    return Jwts.builder()
+        .setSubject(loginId)
+        .claim("type", TokenType.TEMP.getValue())
+        .setIssuedAt(now)
+        .setExpiration(validity)
+        .signWith(key, SignatureAlgorithm.HS256)
+        .compact();
+  }
+
   public Authentication getAuthentication(String token) {
     try {
       Claims claims = getClaims(token);
@@ -76,7 +90,7 @@ public class JwtTokenProvider {
             .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
       }
 
-      CustomUserDetails principal = new CustomUserDetails(userEntity);
+      CustomUserDetails principal = CustomUserDetails.create(userEntity);
       return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
     } catch (Exception e) {
       log.error("Authentication 생성 실패: {}", e.getMessage());

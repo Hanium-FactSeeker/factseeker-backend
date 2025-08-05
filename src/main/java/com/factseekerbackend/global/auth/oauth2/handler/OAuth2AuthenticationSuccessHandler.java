@@ -1,21 +1,15 @@
 package com.factseekerbackend.global.auth.oauth2.handler;
 
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
+import com.factseekerbackend.global.auth.jwt.service.JwtService;
 import com.factseekerbackend.global.auth.oauth2.CustomOAuth2User;
 import com.factseekerbackend.global.auth.oauth2.repository.OAuth2AuthorizationRequestRepository;
-import com.factseekerbackend.global.auth.oauth2.util.CookieUtils;
-import com.factseekerbackend.global.exception.BusinessException;
-import com.factseekerbackend.global.exception.ErrorCode;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -28,13 +22,15 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
   private final OAuth2AuthorizationRequestRepository authorizationRequestRepository;
   private final JwtTokenProvider jwtTokenProvider;
+  private final JwtService jwtService;
 
   @Value("${oauth2.authorized-redirect-uris}")
-  private String[] authorizedRedirectUris;
+  private String clientUrl;
 
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException {
+    log.info("OAuth2AuthenticationSuccessHandler 호출됨");
 
     String targetUrl = determineTargetUrl(request, response, authentication);
 
@@ -50,48 +46,38 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
   protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) {
 
-    Optional<String> redirectUri = CookieUtils.getCookie(request, "redirect_uri")
-        .map(Cookie::getValue);
-
-    if (redirectUri.isPresent() && !isAuthorizedRedirectUri(redirectUri.get())) {
-      throw new BusinessException(ErrorCode.OAUTH2_AUTHENTICATION_PROCESSING_ERROR,
-          "승인되지 않은 Redirect URI입니다.");
-    }
-
-    String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
-
     CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+    String loginId = oAuth2User.getLoginId();
 
-    Authentication jwtauthentication = new UsernamePasswordAuthenticationToken(
-        String.valueOf(oAuth2User.getId()), null, authentication.getAuthorities());
+    log.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
 
-    String accessToken = jwtTokenProvider.createAccessToken(jwtauthentication);
-    String refreshToken = jwtTokenProvider.createRefreshToken(jwtauthentication);
+    if (oAuth2User.isNewUser()) {
+      // 신규 사용자
+      String tempToken = (String) oAuth2User.getAttributes().get("tempToken");
+      log.info("신규 사용자: 회원가입 페이지로 리다이렉션. tempToken: {}", tempToken);
 
-    return UriComponentsBuilder.fromUriString(targetUrl)
-        .queryParam("token", accessToken)
-        .queryParam("refreshToken", refreshToken)
-        .build().toUriString();
+      return UriComponentsBuilder.fromUriString(clientUrl + "/oauth2/signup")
+          .queryParam("token", tempToken)
+          .build().toUriString();
+    } else {
+      // 기존 사용자
+      String accessToken = jwtTokenProvider.createAccessToken(authentication);
+      String refreshToken = jwtTokenProvider.createRefreshToken(authentication);
+
+      jwtService.storeRefreshToken(loginId, refreshToken);
+
+      log.info("기존 사용자: 로그인 성공 페이지로 리다이렉션. accessToken: {}", accessToken);
+      return UriComponentsBuilder.fromUriString(clientUrl + "/login/success")
+          .queryParam("accessToken", accessToken)
+          .queryParam("refreshToken", refreshToken)
+          .build().toUriString();
+    }
   }
 
   protected void clearAuthenticationAttributes(HttpServletRequest request,
       HttpServletResponse response) {
     super.clearAuthenticationAttributes(request);
     authorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
-  }
-
-  private boolean isAuthorizedRedirectUri(String uri) {
-    URI clientRedirectUri = URI.create(uri);
-
-    for (String authorizedRedirectUri : authorizedRedirectUris) {
-      URI authorizedURI = URI.create(authorizedRedirectUri);
-
-      if (authorizedURI.getHost().equalsIgnoreCase(clientRedirectUri.getHost())
-          && authorizedURI.getPort() == clientRedirectUri.getPort()) {
-        return true;
-      }
-    }
-    return false;
   }
 
 }

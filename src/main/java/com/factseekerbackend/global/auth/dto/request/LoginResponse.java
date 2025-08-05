@@ -1,6 +1,6 @@
 package com.factseekerbackend.global.auth.dto.request;
 
-import com.factseekerbackend.global.auth.dto.response.UserInfo;
+import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +15,7 @@ public class LoginResponse {
   private String accessToken;
   private String refreshToken;
   private String tokenType = "Bearer";
-  private UserInfo user;
+  private UserInfoResponse user;
   private boolean success = true;
   private String message;
 

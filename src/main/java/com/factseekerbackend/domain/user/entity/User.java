@@ -1,18 +1,24 @@
 package com.factseekerbackend.domain.user.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 @Getter
 @Entity
@@ -39,17 +45,24 @@ public class User {
   @Column(nullable = false, unique = true)
   private String email;
 
-  @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private Role role;
+  @ElementCollection(fetch = FetchType.EAGER)
+  private Set<Role> roles;
 
   @Enumerated(EnumType.STRING)
-  private AuthProvider authProvider;
+  private AuthProvider provider;
 
-  private String socialId;
+  private String providerId;
 
-  @Builder.Default
   private Boolean emailVerified = false;
+
+  private boolean isCompleteProfile = false;
+
+  @CreatedDate
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
   public void updatePassword(String newEncodedPassword) {
     if (newEncodedPassword == null || newEncodedPassword.trim().isEmpty()) {
@@ -59,7 +72,7 @@ public class User {
   }
 
   public boolean isSocialUser() {
-    return (authProvider != null) && (authProvider != AuthProvider.LOCAL);
+    return (provider != null) && (provider != AuthProvider.LOCAL);
   }
 
   public void updateProfile(String fullName) {

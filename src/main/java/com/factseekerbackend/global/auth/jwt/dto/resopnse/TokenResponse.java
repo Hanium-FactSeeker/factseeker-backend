@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.auth.jwt.dto;
+package com.factseekerbackend.global.auth.jwt.dto.resopnse;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +15,7 @@ public class TokenResponse {
 
   private String accessToken;
   private String refreshToken;
-  private String tokenType;
-  private Long expiresIn;
+  private String tokenType = "Bearer";
+  private long expiresIn;
 
 }

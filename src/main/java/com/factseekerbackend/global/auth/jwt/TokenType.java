@@ -2,7 +2,8 @@ package com.factseekerbackend.global.auth.jwt;
 
 public enum TokenType {
   ACCESS("access"),
-  REFRESH("refresh");
+  REFRESH("refresh"),
+  TEMP("temp");
 
   private final String value;
 
