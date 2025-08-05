@@ -54,7 +54,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     if (isNewUser) {
       // 신규 사용자
-      log.info("신규 사용자: 회원가입 절차 진행. loginId: {}", oAuth2UserInfo.getLoginId());
+      // log.info("신규 사용자: 회원가입 절차 진행. loginId: {}", oAuth2UserInfo.getLoginId());
 
       // 1. 임시 토큰 생성
       String tempToken = jwtTokenProvider.createTempToken(oAuth2UserInfo.getLoginId());
@@ -68,13 +68,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
           .tempToken(tempToken)
           .build();
 
-      redisTemplate.opsForValue().set(SOCIAL_TEMP_PREFIX + tempToken, socialUserInfo, SOCIAL_TEMP_EXPIRY);
+      redisTemplate.opsForValue()
+          .set(SOCIAL_TEMP_PREFIX + tempToken, socialUserInfo, SOCIAL_TEMP_EXPIRY);
 
       authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_PRE_SOCIAL_SIGNUP"));
     } else {
       // 기존 사용자
       User existingUser = userOptional.get();
-      log.info("기존 사용자 로그인: {}", existingUser.getLoginId());
+      // log.info("기존 사용자 로그인: {}", existingUser.getLoginId());
 
       authorities = existingUser.getRoles().stream()
           .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))

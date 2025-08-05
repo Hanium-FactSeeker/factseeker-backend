@@ -9,7 +9,8 @@ import org.springframework.security.oauth2.client.web.AuthorizationRequestReposi
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 
 @Slf4j
-public class OAuth2AuthorizationRequestRepository implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
+public class OAuth2AuthorizationRequestRepository implements
+    AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
   public static final String OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME = "oauth2_auth_request";
   public static final String REDIRECT_URI_PARAM_COOKIE_NAME = "redirect_uri";
@@ -20,6 +21,21 @@ public class OAuth2AuthorizationRequestRepository implements AuthorizationReques
     return CookieUtils.getCookie(request, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME)
         .map(cookie -> CookieUtils.deserialize(cookie, OAuth2AuthorizationRequest.class))
         .orElse(null);
+//    Optional<Cookie> cookieOpt = CookieUtils.getCookie(request,
+//        OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
+//    if (cookieOpt.isEmpty()) {
+//      log.info("OAuth2AuthorizationRequest 쿠키 없음");
+//      return null;
+//    }
+//    try {
+//      OAuth2AuthorizationRequest authRequest = CookieUtils.deserialize(cookieOpt.get(),
+//          OAuth2AuthorizationRequest.class);
+//      log.info("OAuth2AuthorizationRequest 복원 성공, state={}", authRequest.getState());
+//      return authRequest;
+//    } catch (Exception e) {
+//      log.error("OAuth2AuthorizationRequest 역직렬화 실패", e);
+//      return null;
+//    }
   }
 
   @Override

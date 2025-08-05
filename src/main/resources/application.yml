@@ -64,6 +64,7 @@ spring:
             redirect-uri: http://localhost:8080/oauth2/callback/kakao
             authorization-grant-type: authorization_code
             client-name: Kakao
+            client-authentication-method: client_secret_post
 
         provider:
           kakao:
@@ -91,6 +92,12 @@ jwt:
   access-token-expiration-milliseconds: 900000     # 15분
   refresh-token-expiration-milliseconds: 604800000 # 7일
 
-logging:
-  level:
-    com.factseekerbackend.global.auth: INFO
+#logging:
+#  level:
+#    org:
+#      springframework:
+#        security: DEBUG
+#      apache:
+#        http:
+#          headers: DEBUG
+#          client: DEBUG

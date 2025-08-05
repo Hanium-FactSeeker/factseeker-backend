@@ -30,7 +30,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
   @Override
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
       Authentication authentication) throws IOException {
-    log.info("OAuth2AuthenticationSuccessHandler 호출됨");
+    // log.info("OAuth2AuthenticationSuccessHandler 호출됨");
 
     String targetUrl = determineTargetUrl(request, response, authentication);
 
@@ -49,12 +49,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
     String loginId = oAuth2User.getLoginId();
 
-    log.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
+    // log.info("OAuth2User attributes: {}", oAuth2User.getAttributes());
 
     if (oAuth2User.isNewUser()) {
       // 신규 사용자
       String tempToken = (String) oAuth2User.getAttributes().get("tempToken");
-      log.info("신규 사용자: 회원가입 페이지로 리다이렉션. tempToken: {}", tempToken);
+      // log.info("신규 사용자: 회원가입 페이지로 리다이렉션. tempToken: {}", tempToken);
 
       return UriComponentsBuilder.fromUriString(clientUrl + "/oauth2/signup")
           .queryParam("token", tempToken)
