@@ -1,0 +1,25 @@
+name: Run Apify Tasks Every 5 Minutes
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # 매 5분마다 실행
+  workflow_dispatch:       # 수동 실행도 가능하게
+
+jobs:
+  run-apify-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Apify - Twitter Task
+        run: |
+          curl -X POST "https://api.apify.com/v2/actor-tasks/${{ secrets.APIFY_TASK_ID_TWITTER }}/runs" \
+          -H "Authorization: Bearer ${{ secrets.APIFY_TOKEN }}"
+
+      - name: Call Apify - Instagram Task
+        run: |
+          curl -X POST "https://api.apify.com/v2/actor-tasks/${{ secrets.APIFY_TASK_ID_INSTAGRAM }}/runs" \
+          -H "Authorization: Bearer ${{ secrets.APIFY_TOKEN }}"
+
+      - name: Call Apify - Facebook Task
+        run: |
+          curl -X POST "https://api.apify.com/v2/actor-tasks/${{ secrets.APIFY_TASK_ID_FACEBOOK }}/runs" \
+          -H "Authorization: Bearer ${{ secrets.APIFY_TOKEN }}"
