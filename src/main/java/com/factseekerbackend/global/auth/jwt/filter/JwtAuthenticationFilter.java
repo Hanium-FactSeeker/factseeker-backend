@@ -17,12 +17,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtTokenProvider jwtTokenProvider;
-  private final @Lazy JwtService jwtService;
+  private final JwtService jwtService;
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -35,6 +34,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (jwtService.isTokenBlacklisted(token)) {
           log.warn("블랙리스트에 등록된 토큰입니다: {}", token);
           throw new InvalidTokenException("블랙리스트에 등록된 토큰입니다.");
+        }
+
+        if (token.split("\\.").length != 3) {
+          log.warn("토큰 형식이 올바르지 않습니다: {}", token);
+          throw new InvalidTokenException("유효하지 않은 토큰 형식입니다.");
         }
 
         if (jwtTokenProvider.validateAccessToken(token)) {
@@ -61,9 +65,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
   @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+  protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
-    return path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register") || path.startsWith("/api/auth/refresh");
+    return path.startsWith("/api/auth/login") ||
+        path.startsWith("/api/auth/register") ||
+        path.startsWith("/api/auth/refresh") ||
+        path.startsWith("/api/social") ||
+        path.startsWith("/api/check") ||
+        path.startsWith("/oauth2/");
   }
 
 }

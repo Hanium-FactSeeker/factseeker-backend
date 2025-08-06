@@ -60,15 +60,37 @@ public class JwtTokenProvider {
     return createToken(authentication, refreshTokenExpiration, TokenType.REFRESH);
   }
 
+  public String createTempToken(String loginId) {
+    Date now = new Date();
+    long tempTokenExpiration = 600000; // 10분
+    Date validity = new Date(now.getTime() + tempTokenExpiration);
+
+    return Jwts.builder()
+        .setSubject(loginId)
+        .claim("type", TokenType.TEMP.getValue())
+        .setIssuedAt(now)
+        .setExpiration(validity)
+        .signWith(key, SignatureAlgorithm.HS256)
+        .compact();
+  }
+
   public Authentication getAuthentication(String token) {
     try {
       Claims claims = getClaims(token);
       String username = claims.getSubject();
 
-      User userEntity = userRepository.findByLoginId(username)
-          .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+      User userEntity;
 
-      CustomUserDetails principal = new CustomUserDetails(userEntity);
+      try {
+        Long userId = Long.parseLong(username);
+        userEntity = userRepository.findById(userId)
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+      } catch (NumberFormatException e) {
+        userEntity = userRepository.findByLoginId(username)
+            .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+      }
+
+      CustomUserDetails principal = CustomUserDetails.create(userEntity);
       return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
     } catch (Exception e) {
       log.error("Authentication 생성 실패: {}", e.getMessage());

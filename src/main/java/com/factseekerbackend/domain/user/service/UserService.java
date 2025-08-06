@@ -1,25 +1,33 @@
 package com.factseekerbackend.domain.user.service;
 
 import com.factseekerbackend.domain.user.dto.request.ChangePasswordRequest;
+import com.factseekerbackend.domain.user.dto.request.CompleteSocialSignupRequest;
 import com.factseekerbackend.domain.user.dto.request.FindIdRequest;
 import com.factseekerbackend.domain.user.dto.request.ForgotPasswordRequest;
 import com.factseekerbackend.domain.user.dto.request.ResetPasswordRequest;
-import com.factseekerbackend.domain.user.dto.request.UserRegisterRequest;
+import com.factseekerbackend.domain.user.dto.request.RegisterRequest;
 import com.factseekerbackend.domain.user.dto.request.VerifyCodeRequest;
 import com.factseekerbackend.domain.user.dto.response.FindIdResponse;
+import com.factseekerbackend.domain.user.entity.AuthProvider;
 import com.factseekerbackend.domain.user.entity.Role;
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
+import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
+import com.factseekerbackend.global.auth.jwt.dto.resopnse.TokenResponse;
 import com.factseekerbackend.global.auth.jwt.service.JwtService;
+import com.factseekerbackend.global.auth.oauth2.dto.SocialUserInfo;
 import com.factseekerbackend.global.email.EmailService;
 import com.factseekerbackend.global.exception.BusinessException;
 import com.factseekerbackend.global.exception.ErrorCode;
 import java.time.Duration;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,11 +39,14 @@ import org.springframework.util.StringUtils;
 @Transactional
 public class UserService {
 
+  @Value("${jwt.refresh-token-expiration-milliseconds}")
+  private long refreshTokenExpiration;
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
-  private final RedisTemplate<String, String> redisTemplate;
+  private final RedisTemplate<String, Object> redisTemplate;
   private final EmailService emailService;
+  private final StringRedisTemplate stringRedisTemplate;
 
   private static final String RATE_LIMIT_PREFIX = "rate_limit:";
   private static final String VERIFY_ATTEMPTS_PREFIX = "verify_attempts:";
@@ -48,6 +59,84 @@ public class UserService {
   private static final String VERIFIED_USER_PREFIX = "verified_user:";
   private static final Duration CODE_EXPIRY = Duration.ofMinutes(5); // 5분
   private static final Duration VERIFIED_EXPIRY = Duration.ofMinutes(10); // 10분
+
+  @Transactional
+  public UserInfoResponse getCurrentUserInfo(String loginId) {
+    User user = userRepository.findByLoginId(loginId)
+        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+    return UserInfoResponse.from(user);  // User 엔티티 직접 사용
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isLoginIdAvailable(String loginId) {
+    return !userRepository.existsByLoginId(loginId);
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isEmailAvailable(String email) {
+    return !userRepository.existsByEmail(email);
+  }
+
+  // 소셜 로그인 사용자 회원가입 완료
+  @Transactional
+  public TokenResponse completeSocialSignup(CompleteSocialSignupRequest request) {
+    Object socialInfoObject = redisTemplate.opsForValue()
+        .get("social_temp:" + request.getTempToken());
+
+    if (socialInfoObject == null) {
+      throw new IllegalArgumentException("유효하지 않거나 만료된 토큰입니다.");
+    }
+
+    SocialUserInfo socialUserInfo = (SocialUserInfo) socialInfoObject;
+
+    // 중복 체크
+    if (userRepository.existsByLoginId(socialUserInfo.getProviderId())) {
+      throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+    }
+
+    if (userRepository.existsByEmail(socialUserInfo.getEmail())) {
+      throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+    }
+
+    if (userRepository.findByProviderAndProviderId(socialUserInfo.getProvider(),
+        socialUserInfo.getProviderId()).isPresent()) {
+      throw new IllegalArgumentException("이미 가입된 소셜 계정입니다.");
+    }
+
+    User user = User.builder()
+        .loginId(socialUserInfo.getProviderId())
+        .fullName(request.getFullname())
+        .phone(request.getPhone())
+        .email(request.getEmail())
+        .roles(Set.of(Role.USER))
+        .provider(socialUserInfo.getProvider())
+        .providerId(socialUserInfo.getProviderId())
+        .isCompleteProfile(true)
+        .build();
+
+    userRepository.save(user);
+
+    // Redis에서 임시 정보 삭제
+    redisTemplate.delete("social_temp:" + request.getTempToken());
+
+    // JWT 토큰 생성
+    String accessToken = jwtService.generateAccessToken(user.getLoginId());
+    String refreshToken = jwtService.generateRefreshToken(user.getLoginId());
+
+    redisTemplate.opsForValue().set(
+        refreshTokenExpiration + user.getLoginId(),
+        refreshToken,
+        Duration.ofDays(7)
+    );
+
+    return TokenResponse.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .tokenType("Bearer")
+        .expiresIn(900) // 15분
+        .build();
+  }
 
   // 1단계: 인증번호 발송
   @Transactional
@@ -110,15 +199,15 @@ public class UserService {
 
     validateNewPassword(request.getNewPassword(), user.getPassword());
 
-    String encodeNewPassword = passwordEncoder.encode(request.getNewPassword());
-    user.updatePassword(encodeNewPassword);
+    String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
+    user.updatePassword(encodedNewPassword);
 
     deleteVerifiedUser(request.getTempToken());
     jwtService.revokeAllUserTokens(user.getLoginId());
   }
 
   @Transactional
-  public void register(UserRegisterRequest request) {
+  public void register(RegisterRequest request) {
     validateUserRegistration(request);
 
     User user = User.builder()
@@ -127,13 +216,13 @@ public class UserService {
         .fullName(request.getFullname())
         .email(request.getEmail())
         .phone(request.getPhone())
-        .role(Role.USER)
+        .roles(Set.of(Role.USER))
+        .provider(AuthProvider.LOCAL)
+        .isCompleteProfile(true)
         .build();
 
-    emailService.sendWelcomeEmail(request.getEmail(),request.getFullname());
-
+    emailService.sendWelcomeEmail(request.getEmail(), request.getFullname());
     userRepository.save(user);
-
   }
 
   @Transactional
@@ -188,7 +277,7 @@ public class UserService {
   }
 
   private String getStoredVerificationCode(String email) {
-    return redisTemplate.opsForValue().get(VERIFICATION_CODE_PREFIX + email);
+    return stringRedisTemplate.opsForValue().get(VERIFICATION_CODE_PREFIX + email);
   }
 
   private void deleteVerificationCode(String email) {
@@ -200,7 +289,7 @@ public class UserService {
   }
 
   private String getVerifiedUserEmail(String tempToken) {
-    return redisTemplate.opsForValue().get(VERIFIED_USER_PREFIX + tempToken);
+    return stringRedisTemplate.opsForValue().get(VERIFIED_USER_PREFIX + tempToken);
   }
 
   private void deleteVerifiedUser(String tempToken) {
@@ -226,7 +315,7 @@ public class UserService {
     validateNewPassword(changePasswordRequest.getNewPassword(), user.getPassword());
   }
 
-  private void validateUserRegistration(UserRegisterRequest request) {
+  private void validateUserRegistration(RegisterRequest request) {
     if (userRepository.existsByLoginId(request.getLoginId())) {
       throw new BusinessException(ErrorCode.DUPLICATE_LOGIN_ID);
     }
@@ -247,7 +336,7 @@ public class UserService {
 
   private void checkSendRateLimit(String email) {
     String key = RATE_LIMIT_PREFIX + "send:" + email;
-    String attempts = redisTemplate.opsForValue().get(key);
+    String attempts = stringRedisTemplate.opsForValue().get(key);
 
     if (attempts != null && Integer.parseInt(attempts) >= MAX_SEND_ATTEMPTS) {
       log.warn("인증번호 발송 횟수 초과: {}", email);
@@ -257,7 +346,7 @@ public class UserService {
 
   private void checkVerifyRateLimit(String email) {
     String key = VERIFY_ATTEMPTS_PREFIX + email;
-    String attempts = redisTemplate.opsForValue().get(key);
+    String attempts = stringRedisTemplate.opsForValue().get(key);
 
     if (attempts != null && Integer.parseInt(attempts) >= MAX_VERIFY_ATTEMPTS) {
       log.warn("인증번호 검증 시도 횟수 초과: {}", email);
@@ -267,7 +356,7 @@ public class UserService {
 
   private void incrementSendAttempts(String email) {
     String key = RATE_LIMIT_PREFIX + "send:" + email;
-    String currentAttempts = redisTemplate.opsForValue().get(key);
+    String currentAttempts = stringRedisTemplate.opsForValue().get(key);
 
     if (currentAttempts == null) {
       // 첫 번째 시도
@@ -280,7 +369,7 @@ public class UserService {
 
   private void incrementVerifyAttempts(String email) {
     String key = VERIFY_ATTEMPTS_PREFIX + email;
-    String currentAttempts = redisTemplate.opsForValue().get(key);
+    String currentAttempts = stringRedisTemplate.opsForValue().get(key);
 
     if (currentAttempts == null) {
       // 첫 번째 시도 - 인증번호 유효시간과 동일하게 설정
@@ -302,5 +391,6 @@ public class UserService {
     redisTemplate.delete(VERIFY_ATTEMPTS_PREFIX + email);
     log.info("Rate limit 초기화: {}", email);
   }
+
 
 }

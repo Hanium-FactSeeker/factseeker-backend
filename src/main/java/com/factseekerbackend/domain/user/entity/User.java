@@ -1,11 +1,24 @@
 package com.factseekerbackend.domain.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 @Getter
 @Entity
@@ -19,30 +32,53 @@ public class User {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, unique = true)
+  @Column(unique = true)
   private String loginId;
 
-  @Column(nullable = false)
   private String password;
 
   @Column(nullable = false)
   private String fullName;
 
-  @Column(nullable = false)
   private String phone;
 
   @Column(nullable = false, unique = true)
   private String email;
 
-  @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private Role role;
+  @ElementCollection(fetch = FetchType.EAGER)
+  private Set<Role> roles;
 
-  public void updatePassword(String newEncodedPassword){
+  @Enumerated(EnumType.STRING)
+  private AuthProvider provider;
+
+  private String providerId;
+
+  private Boolean emailVerified = false;
+
+  private boolean isCompleteProfile = false;
+
+  @CreatedDate
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
+
+  public void updatePassword(String newEncodedPassword) {
     if (newEncodedPassword == null || newEncodedPassword.trim().isEmpty()) {
       throw new IllegalArgumentException("새로운 비밀번호는 비어있을 수 없습니다.");
     }
     this.password = newEncodedPassword;
+  }
+
+  public boolean isSocialUser() {
+    return (provider != null) && (provider != AuthProvider.LOCAL);
+  }
+
+  public void updateProfile(String fullName) {
+    if (fullName != null) {
+      this.fullName = fullName;
+    }
   }
 
 }

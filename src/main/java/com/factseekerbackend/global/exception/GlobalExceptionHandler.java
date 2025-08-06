@@ -2,7 +2,9 @@ package com.factseekerbackend.global.exception;
 
 import com.factseekerbackend.global.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,6 +40,20 @@ public class GlobalExceptionHandler {
 
     log.warn("인증 에러: {}", message);
     return ResponseEntity.badRequest().body(ApiResponse.error(message));
+  }
+
+  @ExceptionHandler(BadCredentialsException.class)
+  public ResponseEntity<ApiResponse> handleBadCredentialsException(BadCredentialsException ex) {
+    log.warn("인증 실패: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(ApiResponse.error(ex.getMessage()));
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ApiResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+    log.warn("잘못된 요청: {}", ex.getMessage());
+    return ResponseEntity.badRequest()
+        .body(ApiResponse.error(ex.getMessage()));
   }
 
   @ExceptionHandler(Exception.class)

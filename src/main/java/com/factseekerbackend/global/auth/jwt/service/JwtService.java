@@ -1,11 +1,13 @@
 package com.factseekerbackend.global.auth.jwt.service;
 
-import com.factseekerbackend.global.auth.dto.request.LoginRequest;
-import com.factseekerbackend.global.auth.dto.request.LoginResponse;
-import com.factseekerbackend.global.auth.dto.response.UserInfo;
+import com.factseekerbackend.domain.user.entity.User;
+import com.factseekerbackend.domain.user.repository.UserRepository;
+import com.factseekerbackend.global.auth.dto.request.SocialUserInfoResponse;
+import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
 import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
-import com.factseekerbackend.global.auth.jwt.dto.TokenRefreshResponse;
+import com.factseekerbackend.global.auth.jwt.dto.resopnse.TokenRefreshResponse;
+import com.factseekerbackend.global.auth.oauth2.dto.SocialUserInfo;
 import com.factseekerbackend.global.auth.service.CustomUserDetailsService;
 import com.factseekerbackend.global.exception.BusinessException;
 import com.factseekerbackend.global.exception.ErrorCode;
@@ -19,8 +21,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -32,11 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class JwtService {
 
   @Lazy
-  private final AuthenticationManager authenticationManager;
-  @Lazy
   private final CustomUserDetailsService customUserDetailsService;
-  private final RedisTemplate<String, String> redisTemplate;
+  private final RedisTemplate<String, Object> redisTemplate;
   private final JwtTokenProvider jwtTokenProvider;
+  private final UserRepository userRepository;
 
   private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
   private static final String BLACKLIST_PREFIX = "blacklist:";
@@ -44,29 +43,22 @@ public class JwtService {
   private static final Duration REFRESH_TOKEN_EXPIRY = Duration.ofDays(7);
   private static final Duration REUSED_TOKEN_EXPIRY = Duration.ofSeconds(10);
 
-  @Transactional
-  public LoginResponse login(LoginRequest loginRequest, String clientIP) {
-    try {
-      Authentication authentication = authenticateUser(loginRequest);
-      CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+  // 소셜 로그인 임시 토큰 검증
+  public SocialUserInfoResponse verifySocialToken(String tempToken) {
+    Object socialInfoObject = redisTemplate.opsForValue()
+        .get("social_temp:" + tempToken);
 
-      TokenPair tokens = generateTokenPair(authentication);
-
-      storeRefreshToken(userDetails.getUsername(), tokens.getRefreshToken());
-      logSecurityEvent("LOGIN_SUCCESS", userDetails.getUsername(), clientIP);
-
-      return LoginResponse.builder()
-          .accessToken(tokens.getAccessToken())
-          .refreshToken(tokens.getRefreshToken())
-          .tokenType("Bearer")
-          .success(true)
-          .user(UserInfo.from(userDetails))
-          .message("로그인 성공")
-          .build();
-    } catch (BadCredentialsException e) {
-      logSecurityEvent("LOGIN_FAILED", loginRequest.getLoginId(), clientIP);
-      throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
+    if (socialInfoObject == null) {
+      throw new IllegalArgumentException("유효하지 않거나 만료된 토큰입니다.");
     }
+
+    SocialUserInfo socialUserInfo = (SocialUserInfo) socialInfoObject;
+
+    return SocialUserInfoResponse.builder()
+        .email(socialUserInfo.getEmail())
+        .name(socialUserInfo.getName())
+        .provider(socialUserInfo.getProvider())
+        .build();
   }
 
   @Transactional
@@ -87,10 +79,11 @@ public class JwtService {
 
       Authentication authentication = createAuthenticationFromLoginId(loginId);
       TokenPair newTokens = generateTokenPair(authentication);
-
       rotateRefreshToken(loginId, refreshToken, newTokens.getRefreshToken());
 
-      CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+      User user = userRepository.findByLoginId(loginId)
+          .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
       logSecurityEvent("TOKEN_REFRESH_SUCCESS", loginId, clientIP);
 
       return TokenRefreshResponse.builder()
@@ -99,7 +92,7 @@ public class JwtService {
           .tokenType("Bearer")
           .success(true)
           .expiresIn(jwtTokenProvider.getExpiration(newTokens.getAccessToken()))
-          .user(UserInfo.from(userDetails))
+          .user(UserInfoResponse.from(user))
           .message("토큰 갱신 성공")
           .build();
     } catch (Exception e) {
@@ -120,21 +113,16 @@ public class JwtService {
   }
 
   @Transactional
-  public UserInfo getUserInfo(String accessToken) {
+  public UserInfoResponse getUserInfo(String accessToken) {
     validateAccessToken(accessToken);
 
     Claims claims = jwtTokenProvider.getClaims(accessToken);
     String loginId = claims.getSubject();
 
-    CustomUserDetails userDetails = (CustomUserDetails) customUserDetailsService.loadUserByUsername(
-        loginId);
+    User user = userRepository.findByLoginId(loginId)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-    return UserInfo.builder()
-        .loginId(loginId)
-        .email(userDetails.getEmail())
-        .fullName(userDetails.getFullName())
-        .roles(extractRoles(claims))
-        .build();
+    return UserInfoResponse.from(user);  // User 엔티티로 응답 생성
   }
 
   @Transactional
@@ -159,13 +147,22 @@ public class JwtService {
     logSecurityEvent("ALL_TOKENS_REVOKED", loginId, null, reason);
   }
 
-  private Authentication authenticateUser(LoginRequest loginRequest) {
-    return authenticationManager.authenticate(
-        new UsernamePasswordAuthenticationToken(
-            loginRequest.getLoginId(),
-            loginRequest.getPassword()
-        )
-    );
+  @Transactional
+  public String generateAccessToken(String loginId) {
+    Authentication authentication = createAuthenticationFromLoginId(loginId);
+    return jwtTokenProvider.createAccessToken(authentication);
+  }
+
+  @Transactional
+  public String generateRefreshToken(String loginId) {
+    Authentication authentication = createAuthenticationFromLoginId(loginId);
+    return jwtTokenProvider.createRefreshToken(authentication);
+  }
+
+  @Transactional
+  public void storeRefreshToken(String loginId, String refreshToken) {
+    String key = REFRESH_TOKEN_PREFIX + loginId;
+    redisTemplate.opsForValue().set(key, refreshToken, REFRESH_TOKEN_EXPIRY);
   }
 
   private TokenPair generateTokenPair(Authentication authentication) {
@@ -194,8 +191,8 @@ public class JwtService {
       throw new SecurityException("토큰 재사용이 감지되었습니다. 보안을 위해 모든 세션이 종료됩니다.");
     }
 
-    String storedToken = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + loginId);
-    if (storedToken == null || !refreshToken.equals(storedToken)) {
+    Object storedTokenObj = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + loginId);
+    if (!(storedTokenObj instanceof String storedToken) || !refreshToken.equals(storedToken)) {
       log.error("SECURITY_ALERT: Invalid refresh token for user: {}", loginId);
       revokeAllUserTokens(loginId, "INVALID_REFRESH_TOKEN");
       throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
@@ -219,11 +216,6 @@ public class JwtService {
     @SuppressWarnings("unchecked")
     List<String> roles = (List<String>) claims.get("roles");
     return roles != null ? roles : List.of();
-  }
-
-  private void storeRefreshToken(String loginId, String refreshToken) {
-    String key = REFRESH_TOKEN_PREFIX + loginId;
-    redisTemplate.opsForValue().set(key, refreshToken, REFRESH_TOKEN_EXPIRY);
   }
 
   private void blacklistAccessToken(String accessToken) {
