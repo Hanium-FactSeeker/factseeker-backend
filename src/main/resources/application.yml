@@ -92,6 +92,9 @@ jwt:
   access-token-expiration-milliseconds: 900000     # 15분
   refresh-token-expiration-milliseconds: 604800000 # 7일
 
+youtube:
+  api:
+    key: ${YOUTUBE_API_KEY}
 #logging:
 #  level:
 #    org:
