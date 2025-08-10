@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -30,7 +32,11 @@ public class RedisConfig {
   @Value("${spring.data.redis.database}")
   private int database;
 
-  @Bean
+  @Value("${spring.app.redis.cache.database}")
+  private int cacheDatabase;
+
+  @Bean(name = "redisConnectionFactory")
+  @Primary
   public RedisConnectionFactory redisConnectionFactory() {
     RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
     redisConfig.setHostName(redisHost);
@@ -44,8 +50,10 @@ public class RedisConfig {
     return new LettuceConnectionFactory(redisConfig);
   }
 
-  @Bean
-  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+
+  @Bean(name = "redisTemplate")
+  @Primary
+  public RedisTemplate<String, Object> redisTemplate(@Qualifier("redisConnectionFactory") RedisConnectionFactory connectionFactory) {
     RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
     redisTemplate.setConnectionFactory(connectionFactory);
 
@@ -62,14 +70,43 @@ public class RedisConfig {
 
   private RedisSerializer<Object> jackson2JsonRedisSerializer() {
     PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator
-        .builder()
-        .allowIfBaseType(Object.class)
-        .build();
+            .builder()
+            .allowIfBaseType(Object.class)
+            .build();
 
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
     objectMapper.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL);
 
     return new GenericJackson2JsonRedisSerializer(objectMapper);
+  }
+
+  @Bean(name = "cacheRedisConnectionFactory")
+  public RedisConnectionFactory redisCacheConnectionFactory() {
+    RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+    redisConfig.setHostName(redisHost);
+    redisConfig.setPort(redisPort);
+    redisConfig.setDatabase(cacheDatabase);
+
+    if (redisPassword != null && !redisPassword.trim().isEmpty()) {
+      redisConfig.setPassword(redisPassword);
+    }
+
+    return new LettuceConnectionFactory(redisConfig);
+  }
+
+  @Bean(name = "cacheRedisTemplate")
+  public RedisTemplate<String, Object> cacheRedisTemplate(
+          @Qualifier("cacheRedisConnectionFactory") RedisConnectionFactory connectionFactory
+  ) {
+    RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+    redisTemplate.setConnectionFactory(connectionFactory);
+
+    redisTemplate.setKeySerializer(new StringRedisSerializer());
+    redisTemplate.setValueSerializer(jackson2JsonRedisSerializer());
+    redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+    redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer());
+
+    return redisTemplate;
   }
 }
