@@ -1,5 +1,6 @@
 package com.factseekerbackend.global.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
@@ -103,10 +104,27 @@ public class RedisConfig {
     redisTemplate.setConnectionFactory(connectionFactory);
 
     redisTemplate.setKeySerializer(new StringRedisSerializer());
-    redisTemplate.setValueSerializer(jackson2JsonRedisSerializer());
+    redisTemplate.setValueSerializer(jackson2JsonRedisSerializers());
     redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-    redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer());
+    redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializers());
 
     return redisTemplate;
+  }
+
+  private RedisSerializer<Object> jackson2JsonRedisSerializers() {
+    PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
+            .allowIfBaseType(Object.class)
+            .build();
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+
+    objectMapper.activateDefaultTyping(
+            ptv,
+            ObjectMapper.DefaultTyping.NON_FINAL,
+            JsonTypeInfo.As.PROPERTY
+    );
+
+    return new GenericJackson2JsonRedisSerializer(objectMapper);
   }
 }

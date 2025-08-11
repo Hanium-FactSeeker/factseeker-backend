@@ -10,12 +10,16 @@ import com.google.api.services.youtube.model.Video;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class YoutubeSearchService implements YoutubeService {
 
     private final YouTube youTube;
@@ -37,7 +41,7 @@ public class YoutubeSearchService implements YoutubeService {
 
     public VideoListResponseDto getPopularPoliticsTop10Resp(long size) throws IOException {
         List<VideoDto> data = getPopularPoliticsTop10(size);
-        return VideoListResponseDto.from(data, data.size());
+        return VideoListResponseDto.from(data, OffsetDateTime.now(ZoneId.of("Asia/Seoul")).toString());
     }
 
     private List<VideoDto> getPopularPoliticsTop10(long size) throws IOException {
@@ -47,11 +51,10 @@ public class YoutubeSearchService implements YoutubeService {
         request.setKey(apiKey);
         request.setChart("mostPopular");
         request.setRegionCode("KR");
-        request.setVideoCategoryId("25"); // 정치/뉴스 카테고리
+        request.setVideoCategoryId("25"); // 뉴스/정치
         request.setMaxResults(size);
 
         List<Video> items = request.execute().getItems();
-
         return items.stream()
                 .map(VideoDto::from)
                 .toList();
