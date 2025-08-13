@@ -43,6 +43,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     // OAuth
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    implementation 'com.google.api-client:google-api-client:2.7.0'
+    implementation 'com.google.apis:google-api-services-youtube:v3-rev20250714-2.0.0'
+    implementation 'com.google.http-client:google-http-client-jackson2:1.44.2'
+
+
     
     runtimeOnly 'com.h2database:h2' //임시 h2메모리로 DB설정 추후 수정 예정
     compileOnly 'org.projectlombok:lombok'
