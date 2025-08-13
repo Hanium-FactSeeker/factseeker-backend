@@ -1,10 +1,20 @@
 package com.factseekerbackend.domain.user.entity;
 
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
-import jakarta.persistence.*;
-
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -59,9 +69,8 @@ public class User {
   @LastModifiedDate
   private LocalDateTime updatedAt;
 
-  @OneToMany(mappedBy = "video_analysis", cascade = CascadeType.ALL, orphanRemoval = true)
-  private ArrayList<VideoAnalysis> videoAnalyses;
-
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<VideoAnalysis> videoAnalyses;
 
   public void updatePassword(String newEncodedPassword) {
     if (newEncodedPassword == null || newEncodedPassword.trim().isEmpty()) {
