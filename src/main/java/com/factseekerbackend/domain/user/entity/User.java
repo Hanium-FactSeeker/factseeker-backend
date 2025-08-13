@@ -59,8 +59,8 @@ public class User {
   @LastModifiedDate
   private LocalDateTime updatedAt;
 
-  @OneToMany(mappedBy = "video_analysis", cascade = CascadeType.ALL, orphanRemoval = true)
-  private ArrayList<VideoAnalysis> videoAnalyses;
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private ArrayList<VideoAnalysis> videoAnalysis;
 
 
   public void updatePassword(String newEncodedPassword) {
