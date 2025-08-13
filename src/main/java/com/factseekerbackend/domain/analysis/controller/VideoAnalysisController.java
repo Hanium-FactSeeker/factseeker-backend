@@ -22,7 +22,7 @@ public class VideoAnalysisController {
 
     private final FactCheckTriggerService factCheckTriggerService;
     private final VideoAnalysisService videoAnalysisService;
-    private final Top10VideoAnalysisRepository top10VideoAnalysisRepository; // Top10VideoAnalysisRepository 주입
+    private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
 
     @GetMapping("/analysis/{videoAnalysisId}")
     public ResponseEntity<VideoAnalysisResponse> getVideoAnalysis(

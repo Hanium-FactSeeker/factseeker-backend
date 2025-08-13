@@ -17,10 +17,10 @@ public class VideoAnalysisResponse {
     private final String channelTypeReason;
     private final String resultJson;
     private final LocalDateTime createdAt;
-    private final VideoAnalysisStatus status; // New status field
+    private final VideoAnalysisStatus status;
 
     @Builder
-    public VideoAnalysisResponse(String videoId, Integer totalConfidenceScore, String summary, String channelType, String channelTypeReason, String resultJson, LocalDateTime createdAt, LocalDateTime updatedAt, VideoAnalysisStatus status) {
+    public VideoAnalysisResponse(String videoId, Integer totalConfidenceScore, String summary, String channelType, String channelTypeReason, String resultJson, LocalDateTime createdAt, VideoAnalysisStatus status) {
         this.videoId = videoId;
         this.totalConfidenceScore = totalConfidenceScore;
         this.summary = summary;
@@ -28,7 +28,7 @@ public class VideoAnalysisResponse {
         this.channelTypeReason = channelTypeReason;
         this.resultJson = resultJson;
         this.createdAt = createdAt;
-        this.status = status; // Assign status
+        this.status = status;
     }
 
     public static VideoAnalysisResponse from(VideoAnalysis videoAnalysis){
@@ -39,8 +39,8 @@ public class VideoAnalysisResponse {
                 .channelType(videoAnalysis.getChannelType())
                 .channelTypeReason(videoAnalysis.getChannelTypeReason())
                 .resultJson(videoAnalysis.getResultJson())
-                .createdAt(videoAnalysis.getCreatedAt()) // Use createdAt from entity
-                .status(videoAnalysis.getStatus()) // Include status
+                .createdAt(videoAnalysis.getCreatedAt())
+                .status(videoAnalysis.getStatus())
                 .build();
     }
 
@@ -52,8 +52,8 @@ public class VideoAnalysisResponse {
                 .channelType(top10VideoAnalysis.getChannelType())
                 .channelTypeReason(top10VideoAnalysis.getChannelTypeReason())
                 .resultJson(top10VideoAnalysis.getResultJson())
-                .createdAt(top10VideoAnalysis.getCreatedAt()) // Use createdAt from Top10VideoAnalysis
-                .status(VideoAnalysisStatus.COMPLETED) // Top10 analysis is always completed when retrieved
+                .createdAt(top10VideoAnalysis.getCreatedAt())
+                .status(VideoAnalysisStatus.COMPLETED)
                 .build();
     }
 }
