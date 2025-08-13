@@ -1,4 +1,4 @@
-package com.factseekerbackend.domain.youtube.service.fastapi;
+package com.factseekerbackend.domain.analysis.service.fastapi;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PopularToFastApiBridge {
+public class FastApiBridgeService {
 
     private final FactCheckTriggerService triggerService;      // FastAPI 호출 → RDS 저장
     private final RedisTemplate<String, Object> cacheRedis;    // Redis 읽기용
@@ -38,7 +38,7 @@ public class PopularToFastApiBridge {
      * 스케줄 B: 매 시 정각 + 10초에 FastAPI 호출 시작
      */
     @Scheduled(cron = "10 0 * * * *", zone = "Asia/Seoul")
-    public void callFastApiForTopN() {
+    public void callFastApiForTop10() {
         String tag = OffsetDateTime.now(KST).format(LOCK_FMT);
 
         // 분산락: 같은 분 중복 실행 방지

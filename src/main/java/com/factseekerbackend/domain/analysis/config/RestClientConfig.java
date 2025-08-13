@@ -1,4 +1,4 @@
-package com.factseekerbackend.domain.youtube.config;
+package com.factseekerbackend.domain.analysis.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +24,7 @@ public class RestClientConfig {
                 .build();
 
         JdkClientHttpRequestFactory rf = new JdkClientHttpRequestFactory(httpClient);
-        rf.setReadTimeout(Duration.ofSeconds(120));
+        rf.setReadTimeout(Duration.ofSeconds(360));
 
         return RestClient.builder()
                 .baseUrl(baseUrl)

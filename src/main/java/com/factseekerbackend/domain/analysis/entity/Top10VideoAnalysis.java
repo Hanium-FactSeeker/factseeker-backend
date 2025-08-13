@@ -1,24 +1,19 @@
-package com.factseekerbackend.domain.youtube.entity;
+package com.factseekerbackend.domain.analysis.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Temporal;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 
 @Entity
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Top10FactCheckResult {
+public class Top10VideoAnalysis {
     @Id
     @Column(name = "video_id", length = 32, nullable = false)
     private String videoId;
@@ -36,7 +31,6 @@ public class Top10FactCheckResult {
     @Column(name = "channel_type_reason", columnDefinition = "TEXT")
     private String channelTypeReason;
 
-    /** 전체 FastAPI 응답 JSON 원문 보관 (claims 포함) */
     @Column(name = "result_json", columnDefinition = "JSON")
     private String resultJson;
 

@@ -7,6 +7,7 @@ import com.google.api.services.youtube.model.SearchResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,12 +22,9 @@ import java.util.List;
 public class YoutubeController {
     private final PopularPoliticsService popularPoliticsService;
 
-    @Qualifier("cacheRedisTemplate")
-    private final RedisTemplate<String, Object> cacheRedis;
-
-    @GetMapping("/politics")
-    public VideoListResponseDto popularPolitics(@RequestParam(value = "size", defaultValue = "10") int size) {
-        return popularPoliticsService.getPopularPolitics(size);
+    @GetMapping("/videos")
+    public ResponseEntity<VideoListResponseDto> popularPolitics(@RequestParam(value = "size", defaultValue = "10") int size) {
+        return ResponseEntity.ok(popularPoliticsService.getPopularPolitics(size));
     }
 
 }
