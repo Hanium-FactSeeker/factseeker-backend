@@ -60,7 +60,7 @@ public class User {
   private LocalDateTime updatedAt;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private ArrayList<VideoAnalysis> videoAnalysis;
+  private ArrayList<VideoAnalysis> videoAnalysis = new ArrayList<>();
 
 
   public void updatePassword(String newEncodedPassword) {
