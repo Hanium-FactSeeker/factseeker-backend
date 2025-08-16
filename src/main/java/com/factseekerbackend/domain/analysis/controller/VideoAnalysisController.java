@@ -2,10 +2,9 @@ package com.factseekerbackend.domain.analysis.controller;
 
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlDto;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
 import com.factseekerbackend.domain.analysis.service.fastapi.FactCheckTriggerService;
-import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
+import com.factseekerbackend.domain.user.entity.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
