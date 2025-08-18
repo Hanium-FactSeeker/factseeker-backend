@@ -78,7 +78,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .authenticationProvider(authenticationProvider())
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**","/api/check/**").permitAll()
+            .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**","/api/check/**","/api/politicians/**").permitAll()
             .requestMatchers("/api/test/**").permitAll() // 테스트용 - 추후 제거
             .anyRequest().authenticated())
         .oauth2Login(oauth2 -> oauth2
