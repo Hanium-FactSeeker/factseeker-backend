@@ -1,5 +1,6 @@
 package com.factseekerbackend.global.auth.jwt;
 
+import com.factseekerbackend.domain.user.entity.CustomUserDetails;
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
 import com.factseekerbackend.global.exception.BusinessException;

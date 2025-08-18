@@ -1,4 +1,4 @@
-package com.factseekerbackend.global.auth.jwt.dto.resopnse;
+package com.factseekerbackend.global.auth.jwt.dto.response;
 
 import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
 import lombok.AllArgsConstructor;

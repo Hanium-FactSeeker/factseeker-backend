@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: factseeker-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/userdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=1234
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
+      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
+      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - EC2_IP=${EC2_IP}
+
+  db:
+    image: mysql:8.0
+    container_name: factseeker-db
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=userdb
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=1234
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    container_name: factseeker-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass 1234
+    volumes:
+      - redis-data:/data
+
+volumes:
+  db-data:
+  redis-data:

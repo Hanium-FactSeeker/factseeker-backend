@@ -1,19 +1,17 @@
 package com.factseekerbackend.domain.analysis.entity;
 
+import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Top10VideoAnalysis {
+public class Top10VideoAnalysis extends BaseEntity {
     @Id
     @Column(name = "video_id", length = 32, nullable = false)
     private String videoId;
@@ -33,13 +31,5 @@ public class Top10VideoAnalysis {
 
     @Column(name = "result_json", columnDefinition = "JSON")
     private String resultJson;
-
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }
 

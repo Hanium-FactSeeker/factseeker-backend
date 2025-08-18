@@ -7,7 +7,7 @@ import com.factseekerbackend.global.auth.oauth2.handler.OAuth2AuthenticationFail
 import com.factseekerbackend.global.auth.oauth2.handler.OAuth2AuthenticationSuccessHandler;
 import com.factseekerbackend.global.auth.oauth2.repository.OAuth2AuthorizationRequestRepository;
 import com.factseekerbackend.global.auth.oauth2.service.CustomOAuth2UserService;
-import com.factseekerbackend.global.auth.service.CustomUserDetailsService;
+import com.factseekerbackend.domain.user.service.CustomUserDetailsService;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
