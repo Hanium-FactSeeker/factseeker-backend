@@ -1,13 +1,9 @@
-package com.factseekerbackend.global.auth.jwt;
+package com.factseekerbackend.domain.user.entity;
 
-import com.factseekerbackend.domain.user.entity.User;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

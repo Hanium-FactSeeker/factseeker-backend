@@ -30,6 +30,11 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1
+  app:
+    redis:
+      cache:
+        database: 1
+
   datasource:
     url: jdbc:mysql://localhost:3307/userdb
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -91,6 +96,13 @@ jwt:
   secret: ${JWT_SECRET_KEY}
   access-token-expiration-milliseconds: 900000     # 15분
   refresh-token-expiration-milliseconds: 604800000 # 7일
+
+youtube:
+  api:
+    key: ${YOUTUBE_API_KEY}
+
+fastapi:
+  base-url: http://${EC2_IP}:8000
 
 #logging:
 #  level:
