@@ -149,8 +149,8 @@ docker-compose logs -f factseeker-backend
 ### **2. API 테스트**
 
 ```bash
-# 정치인 초기화
-curl -X POST http://localhost:8080/api/politicians/init
+# 정치인 분석 실행
+curl -X POST http://localhost:8080/api/politicians/analysis/execute
 
 # 수동 분석 실행
 curl -X POST http://localhost:8080/api/politicians/analysis/execute

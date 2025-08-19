@@ -221,34 +221,7 @@ public class PoliticianController {
     }
   }
 
-  @Operation(
-      summary = "정치인 초기 데이터 설정",
-      description = "애플리케이션 시작 시 정치인 초기 데이터를 설정합니다."
-  )
-  @ApiResponses({
-      @io.swagger.v3.oas.annotations.responses.ApiResponse(
-          responseCode = "200",
-          description = "초기 데이터 설정 성공",
-          content = @Content(schema = @Schema(implementation = ApiResponse.class))
-      ),
-      @io.swagger.v3.oas.annotations.responses.ApiResponse(
-          responseCode = "500",
-          description = "초기 데이터 설정 실패",
-          content = @Content(schema = @Schema(implementation = ApiResponse.class))
-      )
-  })
-  @PostMapping("/init")
-  public ResponseEntity<ApiResponse<String>> initializePoliticians() {
-    log.info("[API] 정치인 초기 데이터 설정 요청");
 
-    try {
-      batchService.initializeOnStartup();
-      return ResponseEntity.ok(ApiResponse.success("정치인 초기 데이터가 성공적으로 설정되었습니다."));
-    } catch (Exception e) {
-      log.error("[API] 정치인 초기 데이터 설정 실패: {}", e.getMessage());
-      return ResponseEntity.ok(ApiResponse.error("초기 데이터 설정 중 오류가 발생했습니다: " + e.getMessage()));
-    }
-  }
 
   @Operation(
       summary = "개별 정치인 신뢰도 분석 실행",

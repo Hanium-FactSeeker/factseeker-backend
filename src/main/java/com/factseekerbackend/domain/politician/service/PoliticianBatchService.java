@@ -42,17 +42,5 @@ public class PoliticianBatchService {
         }
     }
 
-    /**
-     * 애플리케이션 시작 시 초기 데이터를 설정합니다.
-     */
-    public void initializeOnStartup() {
-        log.info("[STARTUP] 정치인 초기 데이터 설정 시작");
-        
-        try {
-            analysisService.initializePoliticians();
-            log.info("[STARTUP] 정치인 초기 데이터 설정 완료");
-        } catch (Exception e) {
-            log.error("[STARTUP] 정치인 초기 데이터 설정 실패: {}", e.getMessage());
-        }
-    }
+
 }

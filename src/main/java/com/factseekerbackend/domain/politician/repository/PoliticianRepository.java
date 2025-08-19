@@ -1,13 +1,11 @@
 package com.factseekerbackend.domain.politician.repository;
 
 import com.factseekerbackend.domain.politician.entity.Politician;
-import org.springframework.data.domain.Pageable;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface PoliticianRepository extends JpaRepository<Politician, Long> {
@@ -27,7 +25,5 @@ public interface PoliticianRepository extends JpaRepository<Politician, Long> {
     // 백업: 부분 일치 중 첫 1건
     Optional<Politician> findFirstByNameContainingIgnoreCase(String name);
 
-    // 상위 12명 (id 기준)
-    @Query("SELECT p FROM Politician p WHERE p.isActive = true ORDER BY p.id ASC")
-    List<Politician> findTopByGptScore(Pageable pageable);
+
 }
