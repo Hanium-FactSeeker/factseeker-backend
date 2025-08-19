@@ -32,8 +32,8 @@ public class PoliticianService {
         String q = name == null ? "" : name.trim();
         if (q.isEmpty()) throw new IllegalArgumentException("Name is empty");
 
-        Politician p = repository.findFirstByNameKrOrderByGptTrustScoreDescIdAsc(q)
-                .or(() -> repository.findFirstByNameKrContainingIgnoreCase(q))
+        Politician p = repository.findFirstByNameOrderByIdAsc(q)
+                .or(() -> repository.findFirstByNameContainingIgnoreCase(q))
                 .orElseThrow(() -> new IllegalArgumentException("Politician not found by name: " + name));
         return PoliticianResponse.from(p);
     }
@@ -41,6 +41,6 @@ public class PoliticianService {
     // 상위 12명 이름만
     public List<String> getTop12Names() {
         List<Politician> list = repository.findTopByGptScore(PageRequest.of(0, 12));
-        return list.stream().map(Politician::getNameKr).toList();
+        return list.stream().map(Politician::getName).toList();
     }
 }
