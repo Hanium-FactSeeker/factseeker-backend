@@ -1,53 +1,168 @@
 version: '3.8'
 
 services:
-  backend:
-    build: .
-    container_name: factseeker-backend
-    ports:
-      - "8080:8080"
-    depends_on:
-      - db
-      - redis
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/userdb
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=1234
-      - SPRING_DATA_REDIS_HOST=redis
-      - SPRING_DATA_REDIS_PORT=6379
-      - SPRING_DATA_REDIS_PASSWORD=1234
-      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
-      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
-      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
-      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
-      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
-      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-      - EC2_IP=${EC2_IP}
-
-  db:
+  # MySQL Database
+  mysql:
     image: mysql:8.0
-    container_name: factseeker-db
-    ports:
-      - "3307:3306"
+    container_name: factseeker-mysql
+    restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=userdb
-      - MYSQL_USER=user
-      - MYSQL_PASSWORD=1234
-    volumes:
-      - db-data:/var/lib/mysql
-
-  redis:
-    image: redis:latest
-    container_name: factseeker-redis
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: factseeker
+      MYSQL_USER: factseeker
+      MYSQL_PASSWORD: factseeker1234
     ports:
-      - "6379:6379"
-    command: redis-server --requirepass 1234
+      - '3306:3306'
     volumes:
-      - redis-data:/data
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/conf:/etc/mysql/conf.d
+    networks:
+      - factseeker-network
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: factseeker-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - factseeker-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Spring Boot Application
+  factseeker-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: factseeker-backend
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    environment:
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/factseeker?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: factseeker
+      SPRING_DATASOURCE_PASSWORD: factseeker1234
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+
+      # Redis Configuration
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD:
+      SPRING_DATA_REDIS_DATABASE: 0
+
+      # JWT Configuration
+      JWT_SECRET_KEY: your-super-secret-jwt-key-here-change-in-production
+      JWT_ACCESS_TOKEN_EXPIRATION_MILLISECONDS: 900000
+      JWT_REFRESH_TOKEN_EXPIRATION_MILLISECONDS: 604800000
+
+      # LLM API Configuration (application.yml의 llm.* 설정과 일치)
+      OPENAI_API_KEY: your-openai-api-key-here
+      OPENAI_ORGANIZATION: your-openai-org-id-optional
+      GOOGLE_GEMINI_API_KEY: your-gemini-api-key-here
+
+      # OAuth2 Configuration (set these in production)
+      NAVER_CLIENT_ID: your-naver-client-id
+      NAVER_CLIENT_SECRET: your-naver-client-secret
+      KAKAO_CLIENT_ID: your-kakao-client-id
+      KAKAO_CLIENT_SECRET: your-kakao-client-secret
+
+      # Email Configuration (set these in production)
+      SPRING_MAIL_USERNAME: your-email@gmail.com
+      SPRING_MAIL_PASSWORD: your-email-password
+
+      # Application Configuration
+      SPRING_PROFILES_ACTIVE: docker
+      OAUTH2_AUTHORIZED_REDIRECT_URIS: http://localhost:3000
+
+      # Logging
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_COM_FACTSEEKERBACKEND: DEBUG
+
+      # JVM Options
+      JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseContainerSupport
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - factseeker-network
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8080/actuator/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    volumes:
+      - ./logs:/app/logs
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: factseeker-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - factseeker-backend
+    networks:
+      - factseeker-network
+    profiles:
+      - production
+
+  # Adminer (Database Management Tool)
+  adminer:
+    image: adminer:latest
+    container_name: factseeker-adminer
+    restart: unless-stopped
+    ports:
+      - '8081:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    depends_on:
+      - mysql
+    networks:
+      - factseeker-network
+    profiles:
+      - development
 
 volumes:
-  db-data:
-  redis-data:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  factseeker-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

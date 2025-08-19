@@ -1,30 +1,48 @@
 package com.factseekerbackend.domain.politician.entity;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Getter
-@NoArgsConstructor
 @Entity
-@Table(
-        name = "politicians",
-        catalog = "politicians" // 필요 시 서버에서는 factseeker_ingest 로 변경
-)
+@Table(name = "politicians")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 public class Politician {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name_kr", nullable = false, length = 100)
-    private String nameKr;
+    @Column(nullable = false, length = 100)
+    private String name;
 
     @Column(name = "birth_date")
     private String birthDate;
 
-    @Column(name = "party", length = 100)
+    @Column(length = 100)
     private String party;
+
+    @Column(length = 100)
+    private String position;
+
+    @Column(length = 100)
+    private String region;
 
     @Column(name = "facebook_url", length = 512)
     private String facebookUrl;
@@ -41,12 +59,33 @@ public class Politician {
     @Column(name = "profile_image_url", length = 512)
     private String profileImageUrl;
 
-    @Column(name = "gpt_trust_score", precision = 5, scale = 2)
-    private java.math.BigDecimal gptTrustScore;
+    @Column(nullable = false)
+    private boolean isActive = true;
 
-    @Column(name = "claude_trust_score", precision = 5, scale = 2)
-    private java.math.BigDecimal claudeTrustScore;
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
-    @Column(name = "gemini_trust_score", precision = 5, scale = 2)
-    private java.math.BigDecimal geminiTrustScore;
+    @Builder
+    public Politician(String name, String birthDate, String party, String position, String region, String facebookUrl, String instagramUrl, String xUrl, String youtubeUrl, String profileImageUrl) {
+        this.name = name;
+        this.birthDate = birthDate;
+        this.party = party;
+        this.position = position;
+        this.region = region;
+        this.facebookUrl = facebookUrl;
+        this.instagramUrl = instagramUrl;
+        this.xUrl = xUrl;
+        this.youtubeUrl = youtubeUrl;
+        this.profileImageUrl = profileImageUrl;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    public void activate() {
+        this.isActive = true;
+    }
 }

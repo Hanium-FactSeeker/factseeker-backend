@@ -94,7 +94,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET_KEY}
-  access-token-expiration-milliseconds: 900000     # 15분
+  access-token-expiration-milliseconds: 900000 # 15분
   refresh-token-expiration-milliseconds: 604800000 # 7일
 
 youtube:
@@ -104,6 +104,18 @@ youtube:
 fastapi:
   base-url: http://${EC2_IP}:8000
 
+# LLM API Configuration
+llm:
+  openai:
+    api-key: ${OPENAI_API_KEY}
+    model: gpt-4o
+    max-tokens: 2000
+    temperature: 0.7
+  gemini:
+    api-key: ${GOOGLE_GEMINI_API_KEY}
+    model: gemini-1.5-flash
+    max-tokens: 2000
+    temperature: 0.7
 #logging:
 #  level:
 #    org:
@@ -113,3 +125,14 @@ fastapi:
 #        http:
 #          headers: DEBUG
 #          client: DEBUG
+
+# Swagger/OpenAPI 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: com.factseekerbackend
+  paths-to-match: /api/**
