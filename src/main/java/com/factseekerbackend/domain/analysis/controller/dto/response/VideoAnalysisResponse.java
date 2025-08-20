@@ -15,18 +15,18 @@ public class VideoAnalysisResponse {
     private final String summary;
     private final String channelType;
     private final String channelTypeReason;
-    private final String resultJson;
+    private final String claims;
     private final LocalDateTime createdAt;
     private final VideoAnalysisStatus status;
 
     @Builder
-    public VideoAnalysisResponse(String videoId, Integer totalConfidenceScore, String summary, String channelType, String channelTypeReason, String resultJson, LocalDateTime createdAt, VideoAnalysisStatus status) {
+    public VideoAnalysisResponse(String videoId, Integer totalConfidenceScore, String summary, String channelType, String channelTypeReason, String claims, LocalDateTime createdAt, VideoAnalysisStatus status) {
         this.videoId = videoId;
         this.totalConfidenceScore = totalConfidenceScore;
         this.summary = summary;
         this.channelType = channelType;
         this.channelTypeReason = channelTypeReason;
-        this.resultJson = resultJson;
+        this.claims = claims;
         this.createdAt = createdAt;
         this.status = status;
     }
@@ -38,7 +38,7 @@ public class VideoAnalysisResponse {
                 .summary(videoAnalysis.getSummary())
                 .channelType(videoAnalysis.getChannelType())
                 .channelTypeReason(videoAnalysis.getChannelTypeReason())
-                .resultJson(videoAnalysis.getResultJson())
+                .claims(videoAnalysis.getClaims())
                 .createdAt(videoAnalysis.getCreatedAt())
                 .status(videoAnalysis.getStatus())
                 .build();
@@ -51,7 +51,7 @@ public class VideoAnalysisResponse {
                 .summary(top10VideoAnalysis.getSummary())
                 .channelType(top10VideoAnalysis.getChannelType())
                 .channelTypeReason(top10VideoAnalysis.getChannelTypeReason())
-                .resultJson(top10VideoAnalysis.getResultJson())
+                .claims(top10VideoAnalysis.getClaims())
                 .createdAt(top10VideoAnalysis.getCreatedAt())
                 .status(VideoAnalysisStatus.COMPLETED)
                 .build();

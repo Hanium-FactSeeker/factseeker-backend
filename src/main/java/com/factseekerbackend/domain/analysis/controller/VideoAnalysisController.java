@@ -20,7 +20,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.CompletableFuture;
-import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
+
 import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -28,7 +28,7 @@ import jakarta.validation.Valid;
 
 @Slf4j
 @RestController
-@RequiredArgsConstructor()
+@RequiredArgsConstructor
 @RequestMapping
 @Tag(name = "비디오 분석", description = "유튜브 비디오 분석 및 팩트체크 API")
 @Validated
@@ -82,7 +82,7 @@ public class VideoAnalysisController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "분석 요청 성공",
-            content = @Content(schema = @Schema(implementation = String.class))
+            content = @Content(schema = @Schema(oneOf = {String.class, VideoAnalysisResponse.class}))
         ),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "400",
@@ -91,14 +91,14 @@ public class VideoAnalysisController {
         )
     })
     @PostMapping("/analysis")
-    public CompletableFuture<ResponseEntity<ApiResponse<String>>> saveVideoAnalysis(
+    public CompletableFuture<ResponseEntity<ApiResponse<?>>> saveVideoAnalysis(
             @Parameter(description = "분석할 유튜브 URL", example = "https://www.youtube.com/watch?v=example")
-            @Valid @RequestBody VideoUrlDto videoUrlDto,
+            @Valid @RequestBody VideoUrlRequest videoUrlRequest,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        log.info("[API] 비디오 분석 요청: {}", videoUrlDto.youtubeUrl());
+        log.info("[API] 비디오 분석 요청: {}", videoUrlRequest.youtubeUrl());
         
         try {
-            String youtubeUrl = videoUrlDto.youtubeUrl();
+            String youtubeUrl = videoUrlRequest.youtubeUrl();
             if (userDetails != null) {
                 Long userId = userDetails.getId();
                 log.info("[API] 로그인 사용자 분석 요청 - User ID: {}", userId);
@@ -109,7 +109,7 @@ public class VideoAnalysisController {
             } else {
                 log.info("[API] 비로그인 사용자 분석 요청");
                 return factCheckTriggerService.triggerSingleToRdsToNotLogin(youtubeUrl)
-                    .thenApply(result -> ResponseEntity.ok(ApiResponse.success("비디오 분석이 성공적으로 요청되었습니다.")));
+                    .thenApply(result -> ResponseEntity.ok(ApiResponse.success("비디오 분석 결과", result)));
             }
         } catch (Exception e) {
             log.error("[API] 비디오 분석 요청 실패: {}", e.getMessage());

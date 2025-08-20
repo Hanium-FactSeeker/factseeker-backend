@@ -4,14 +4,17 @@ import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Top10VideoAnalysis extends BaseEntity {
+public class Top10VideoAnalysis {
     @Id
     @Column(name = "video_id", length = 32, nullable = false)
     private String videoId;
@@ -29,7 +32,10 @@ public class Top10VideoAnalysis extends BaseEntity {
     @Column(name = "channel_type_reason", columnDefinition = "TEXT")
     private String channelTypeReason;
 
-    @Column(name = "result_json", columnDefinition = "JSON")
-    private String resultJson;
+    @Column(name = "claims", columnDefinition = "JSON")
+    private String claims;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }
 

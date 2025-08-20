@@ -1,9 +1,10 @@
 package com.factseekerbackend.domain.analysis.entity;
 
 import com.factseekerbackend.domain.user.entity.User;
-import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 
 @Entity
@@ -11,7 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Getter
-public class VideoAnalysis extends BaseEntity {
+public class VideoAnalysis {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "video_analysis_id")
@@ -33,8 +34,11 @@ public class VideoAnalysis extends BaseEntity {
     @Column(name = "channel_type_reason", columnDefinition = "TEXT")
     private String channelTypeReason;
 
-    @Column(name = "result_json", columnDefinition = "JSON")
-    private String resultJson;
+    @Column(name = "claims", columnDefinition = "JSON")
+    private String claims;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING) // EnumType.STRING으로 저장
     @Column(name = "status", length = 50)
