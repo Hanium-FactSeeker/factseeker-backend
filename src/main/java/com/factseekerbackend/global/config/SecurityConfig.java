@@ -7,7 +7,7 @@ import com.factseekerbackend.global.auth.oauth2.handler.OAuth2AuthenticationFail
 import com.factseekerbackend.global.auth.oauth2.handler.OAuth2AuthenticationSuccessHandler;
 import com.factseekerbackend.global.auth.oauth2.repository.OAuth2AuthorizationRequestRepository;
 import com.factseekerbackend.global.auth.oauth2.service.CustomOAuth2UserService;
-import com.factseekerbackend.global.auth.service.CustomUserDetailsService;
+import com.factseekerbackend.domain.user.service.CustomUserDetailsService;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,7 +79,8 @@ public class SecurityConfig {
         .authenticationProvider(authenticationProvider())
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**","/api/check/**").permitAll()
-            .requestMatchers("/api/test/**", "/api/youtube/**").permitAll() // 테스트용 - 추후 제거
+            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll() // 테스트용 - 추후 제거
+            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
             .anyRequest().authenticated())
         .oauth2Login(oauth2 -> oauth2
             .authorizationEndpoint(authorization -> authorization

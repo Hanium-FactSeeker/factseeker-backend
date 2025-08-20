@@ -1,11 +1,11 @@
-package com.factseekerbackend.global.auth;
+package com.factseekerbackend.global.auth.service;
 
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
 import com.factseekerbackend.global.auth.dto.request.LoginRequest;
 import com.factseekerbackend.global.auth.dto.request.LoginResponse;
 import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
-import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
+import com.factseekerbackend.domain.user.entity.CustomUserDetails;
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
 import com.factseekerbackend.global.auth.jwt.service.JwtService;
 import com.factseekerbackend.global.exception.BusinessException;

@@ -1,18 +1,26 @@
 package com.factseekerbackend.domain.user.entity;
 
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
-import jakarta.persistence.*;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import com.factseekerbackend.global.common.BaseEntity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.List;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 @Getter
 @Entity
@@ -20,7 +28,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 @Table
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class User {
+public class User extends BaseEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,15 +61,8 @@ public class User {
 
   private boolean isCompleteProfile = false;
 
-  @CreatedDate
-  private LocalDateTime createdAt;
-
-  @LastModifiedDate
-  private LocalDateTime updatedAt;
-
-  @OneToMany(mappedBy = "video_analysis", cascade = CascadeType.ALL, orphanRemoval = true)
-  private ArrayList<VideoAnalysis> videoAnalyses;
-
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<VideoAnalysis> videoAnalyses;
 
   public void updatePassword(String newEncodedPassword) {
     if (newEncodedPassword == null || newEncodedPassword.trim().isEmpty()) {

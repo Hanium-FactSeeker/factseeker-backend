@@ -1,8 +1,8 @@
-package com.factseekerbackend.global.auth.service;
+package com.factseekerbackend.domain.user.service;
 
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
-import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
+import com.factseekerbackend.domain.user.entity.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
