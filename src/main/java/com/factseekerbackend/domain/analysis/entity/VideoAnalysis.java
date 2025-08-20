@@ -2,10 +2,8 @@ package com.factseekerbackend.domain.analysis.entity;
 
 import com.factseekerbackend.domain.user.entity.User;
 import jakarta.persistence.*;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 

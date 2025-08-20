@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -60,7 +61,7 @@ public class User {
   private LocalDateTime updatedAt;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private ArrayList<VideoAnalysis> videoAnalysis = new ArrayList<>();
+  private List<VideoAnalysis> videoAnalysis = new ArrayList<>();
 
 
   public void updatePassword(String newEncodedPassword) {
