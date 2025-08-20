@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: factseeker-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: factseeker
+      MYSQL_USER: factseeker
+      MYSQL_PASSWORD: factseeker1234
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/conf:/etc/mysql/conf.d
+    networks:
+      - factseeker-network
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    container_name: factseeker-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - factseeker-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  factseeker-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: factseeker-backend
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    env_file:
+      - .env            # 로컬 비밀값은 .env로 관리(커밋 금지)
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      # 필요 시 JAVA_OPTS 등 추가 오버라이드 가능
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - factseeker-network
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8080/actuator/health']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    volumes:
+      - ./logs:/app/logs
+
+  # 선택: Nginx / Adminer는 필요 시 profiles로 사용
+  nginx:
+    image: nginx:alpine
+    container_name: factseeker-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - factseeker-backend
+    networks:
+      - factseeker-network
+    profiles: [production]
+
+  adminer:
+    image: adminer:latest
+    container_name: factseeker-adminer
+    restart: unless-stopped
+    ports:
+      - '8081:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    depends_on:
+      - mysql
+    networks:
+      - factseeker-network
+    profiles: [development]
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  factseeker-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

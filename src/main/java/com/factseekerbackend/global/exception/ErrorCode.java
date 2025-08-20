@@ -38,9 +38,11 @@ public enum ErrorCode {
   OAUTH2_PROVIDER_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공업체입니다."),
   OAUTH2_UNAUTHORIZED_REDIRECT_URI(HttpStatus.BAD_REQUEST, "승인되지 않은 리다이렉트 URI입니다."),
 
+  // Trend 관련 에러
+  TRENDS_NOT_AVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "현재 트렌드 데이터를 조회할 수 없습니다. 잠시 후 다시 시도해주세요."),
+
   // 공통 에러
   INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "잘못된 입력값입니다."),
-
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
 

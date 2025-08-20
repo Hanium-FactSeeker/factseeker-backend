@@ -13,7 +13,7 @@ import com.factseekerbackend.domain.user.entity.Role;
 import com.factseekerbackend.domain.user.entity.User;
 import com.factseekerbackend.domain.user.repository.UserRepository;
 import com.factseekerbackend.global.auth.dto.response.UserInfoResponse;
-import com.factseekerbackend.global.auth.jwt.dto.resopnse.TokenResponse;
+import com.factseekerbackend.global.auth.jwt.dto.response.TokenResponse;
 import com.factseekerbackend.global.auth.jwt.service.JwtService;
 import com.factseekerbackend.global.auth.oauth2.dto.SocialUserInfo;
 import com.factseekerbackend.global.email.EmailService;

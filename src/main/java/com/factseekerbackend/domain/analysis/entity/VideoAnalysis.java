@@ -1,18 +1,17 @@
 package com.factseekerbackend.domain.analysis.entity;
 
 import com.factseekerbackend.domain.user.entity.User;
+import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
 
-import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Getter
-public class VideoAnalysis {
+public class VideoAnalysis extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "video_analysis_id")
@@ -40,11 +39,7 @@ public class VideoAnalysis {
     @Enumerated(EnumType.STRING) // EnumType.STRING으로 저장
     @Column(name = "status", length = 50)
     private VideoAnalysisStatus status; // 타입 변경
-
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
+  
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;

@@ -3,7 +3,6 @@ package com.factseekerbackend.global.auth.dto.response;
 import com.factseekerbackend.domain.user.entity.AuthProvider;
 import com.factseekerbackend.domain.user.entity.Role;
 import com.factseekerbackend.domain.user.entity.User;
-import com.factseekerbackend.global.auth.jwt.CustomUserDetails;
 import java.time.LocalDateTime;
 import java.util.Set;
 import lombok.Builder;
