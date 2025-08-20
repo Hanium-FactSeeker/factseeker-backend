@@ -38,12 +38,6 @@ public class Politician {
     @Column(length = 100)
     private String party;
 
-    @Column(length = 100)
-    private String position;
-
-    @Column(length = 100)
-    private String region;
-
     @Column(name = "facebook_url", length = 512)
     private String facebookUrl;
 
@@ -68,12 +62,10 @@ public class Politician {
     private LocalDateTime createdAt;
 
     @Builder
-    public Politician(String name, String birthDate, String party, String position, String region, String facebookUrl, String instagramUrl, String xUrl, String youtubeUrl, String profileImageUrl) {
+    public Politician(String name, String birthDate, String party, String facebookUrl, String instagramUrl, String xUrl, String youtubeUrl, String profileImageUrl) {
         this.name = name;
         this.birthDate = birthDate;
         this.party = party;
-        this.position = position;
-        this.region = region;
         this.facebookUrl = facebookUrl;
         this.instagramUrl = instagramUrl;
         this.xUrl = xUrl;

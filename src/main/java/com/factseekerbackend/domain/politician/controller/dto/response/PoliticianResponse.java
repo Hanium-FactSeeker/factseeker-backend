@@ -30,8 +30,6 @@ public class PoliticianResponse {
                 .name(politician.getName())
                 .birthDate(politician.getBirthDate())
                 .party(politician.getParty())
-                .position(politician.getPosition())
-                .region(politician.getRegion())
                 .facebookUrl(politician.getFacebookUrl())
                 .instagramUrl(politician.getInstagramUrl())
                 .xUrl(politician.getXUrl())

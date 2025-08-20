@@ -169,8 +169,6 @@ public class GPTAnalysisService implements LLMAnalysisService {
             """, 
             politician.getName(),
             politician.getParty() != null ? politician.getParty() : "정보 없음",
-            politician.getPosition() != null ? politician.getPosition() : "정보 없음",
-            politician.getRegion() != null ? politician.getRegion() : "정보 없음",
             analysisPeriod
         );
     }
