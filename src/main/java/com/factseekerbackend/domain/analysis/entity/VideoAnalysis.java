@@ -38,7 +38,7 @@ public class VideoAnalysis extends BaseEntity {
     @Enumerated(EnumType.STRING) // EnumType.STRING으로 저장
     @Column(name = "status", length = 50)
     private VideoAnalysisStatus status; // 타입 변경
-
+  
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;

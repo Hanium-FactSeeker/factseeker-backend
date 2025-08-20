@@ -1,7 +1,8 @@
 package com.factseekerbackend.domain.analysis.controller;
 
-import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlDto;
+import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
+import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
 import com.factseekerbackend.domain.analysis.service.fastapi.FactCheckTriggerService;
 import com.factseekerbackend.domain.user.entity.CustomUserDetails;
@@ -19,6 +20,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.CompletableFuture;
+import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import jakarta.validation.Valid;
 
@@ -32,6 +36,7 @@ public class VideoAnalysisController {
 
     private final FactCheckTriggerService factCheckTriggerService;
     private final VideoAnalysisService videoAnalysisService;
+    private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
 
     @Operation(
         summary = "비디오 분석 결과 조회",
@@ -113,4 +118,17 @@ public class VideoAnalysisController {
             );
         }
     }
+  
+  
+    @GetMapping("/analysis/top10/{videoId}")
+    public ResponseEntity<VideoAnalysisResponse> getTop10VideoAnalysis(
+            @PathVariable("videoId") String videoId) {
+        return top10VideoAnalysisRepository.findById(videoId)
+                .map(analysis -> ResponseEntity.ok(VideoAnalysisResponse.from(analysis)))
+                .orElseGet(() -> ResponseEntity.accepted().body(VideoAnalysisResponse.builder()
+                        .videoId(videoId)
+                        .status(VideoAnalysisStatus.PENDING)
+                        .build()));
+    }
+
 }

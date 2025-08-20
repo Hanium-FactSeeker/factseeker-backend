@@ -18,7 +18,7 @@ public class YoutubeConfig {
                 GoogleNetHttpTransport.newTrustedTransport(),
                 JacksonFactory.getDefaultInstance(),
                 null
-        ).setApplicationName("fact-seeker") // 애플리케이션 이름 설정
+        ).setApplicationName("fact-seeker")
                 .build();
     }
 }
