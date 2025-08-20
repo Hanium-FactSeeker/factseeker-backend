@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -44,8 +45,10 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
+  @Qualifier("cacheRedisTemplate")
   private final RedisTemplate<String, Object> redisTemplate;
   private final EmailService emailService;
+  @Qualifier("cacheStringRedisTemplate")
   private final StringRedisTemplate stringRedisTemplate;
 
   private static final String RATE_LIMIT_PREFIX = "rate_limit:";
@@ -120,15 +123,10 @@ public class UserService {
     // Redis에서 임시 정보 삭제
     redisTemplate.delete("social_temp:" + request.getTempToken());
 
-    // JWT 토큰 생성
+    // JWT 토큰 생성 및 저장 (토큰 저장은 JwtService를 통해 분리된 Redis DB 사용)
     String accessToken = jwtService.generateAccessToken(user.getLoginId());
     String refreshToken = jwtService.generateRefreshToken(user.getLoginId());
-
-    redisTemplate.opsForValue().set(
-        refreshTokenExpiration + user.getLoginId(),
-        refreshToken,
-        Duration.ofDays(7)
-    );
+    jwtService.storeRefreshToken(user.getLoginId(), refreshToken);
 
     return TokenResponse.builder()
         .accessToken(accessToken)

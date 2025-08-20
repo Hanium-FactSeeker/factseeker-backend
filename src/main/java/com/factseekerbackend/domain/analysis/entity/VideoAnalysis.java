@@ -5,6 +5,7 @@ import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

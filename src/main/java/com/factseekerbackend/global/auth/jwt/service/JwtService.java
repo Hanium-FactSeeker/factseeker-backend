@@ -19,6 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +35,8 @@ public class JwtService {
   @Lazy
   private final CustomUserDetailsService customUserDetailsService;
   private final RedisTemplate<String, Object> redisTemplate;
+  @Qualifier("cacheRedisTemplate")
+  private final RedisTemplate<String, Object> cacheRedisTemplate;
   private final JwtTokenProvider jwtTokenProvider;
   private final UserRepository userRepository;
 
@@ -45,7 +48,7 @@ public class JwtService {
 
   // 소셜 로그인 임시 토큰 검증
   public SocialUserInfoResponse verifySocialToken(String tempToken) {
-    Object socialInfoObject = redisTemplate.opsForValue()
+    Object socialInfoObject = cacheRedisTemplate.opsForValue()
         .get("social_temp:" + tempToken);
 
     if (socialInfoObject == null) {
