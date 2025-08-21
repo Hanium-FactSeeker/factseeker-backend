@@ -37,7 +37,7 @@ echo "🛑 기존 컨테이너 중지 중..."
 docker-compose down  # 기존 컨테이너 중지 및 제거
 
 echo "🐳 최신 Docker 이미지 가져오는 중..."
-docker pull jjjsuckwoo/FactSeeker-app:latest # 최신 이미지 가져오기
+docker pull jjjsuckwoo/factseeker-backend:latest # 최신 이미지 가져오기
 
 echo "🔒 파일 권한 설정 중..."
 chmod 600 /home/ubuntu/.env
