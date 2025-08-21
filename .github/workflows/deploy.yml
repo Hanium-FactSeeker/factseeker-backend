@@ -10,27 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: ✅ 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: ✅ JDK 17 설정
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build with Gradle
+      - name: ✅ Gradle 빌드 (테스트 제외)
         run: ./gradlew clean build -x test
 
-      - name: Docker Login
+      - name: ✅ DockerHub 로그인
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Docker build & push
+      - name: ✅ Docker 이미지 빌드 및 푸시
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend:latest .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend:latest
 
-      - name: SSH to EC2 and deploy container
+      - name: ✅ EC2 접속 및 배포
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -38,23 +38,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+
+            echo "📁 앱 디렉토리 설정"
             APP_DIR=/home/ubuntu/factseeker-backend-deploy
             IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend:latest
+            mkdir -p $APP_DIR
 
-            # 1. .env 파일 저장
+            echo "📄 .env 파일 저장"
             echo "${{ secrets.ENV_FILE }}" > $APP_DIR/.env
 
-            # 2. application.yml 파일 저장
+            echo "📄 application.yml 저장"
             echo "${{ secrets.APPLICATION_YML }}" > $APP_DIR/application.yml
 
-            # 3. Docker 이미지 Pull
+            echo "🐳 Docker 이미지 Pull"
             docker pull $IMAGE
 
-            # 4. 기존 컨테이너 정지 및 삭제
+            echo "🧹 기존 컨테이너 종료 및 삭제"
             docker stop factseeker-backend || true
             docker rm factseeker-backend || true
 
-            # 5. 컨테이너 실행 (application.yml 바인딩)
+            echo "🚀 새 컨테이너 실행"
             docker run -d \
               --name factseeker-backend \
               --env-file $APP_DIR/.env \
@@ -62,3 +65,5 @@ jobs:
               -e SPRING_PROFILES_ACTIVE=dev \
               -p 8080:8080 \
               $IMAGE
+
+            echo "✅ 배포 완료"
