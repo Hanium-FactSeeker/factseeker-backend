@@ -82,7 +82,8 @@ public class SecurityConfig {
                             "/v3/api-docs/**",
                             "/api-docs/**",
                             "/api-docs",
-                            "/v3/api-docs"
+                            "/v3/api-docs",
+                            "/actuator/**"
                     ).permitAll()
 
                     .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**", "/api/check/**").permitAll()
