@@ -18,7 +18,7 @@ public class TrendScheduler {
   public TrendScheduler(TrendService trendService) {
     this.trendService = trendService;
     this.webClient = WebClient.builder()
-        .baseUrl("http://localhost:5001") // 파이썬 API 서버 주소
+        .baseUrl("http://172.31.60.165:8000") // 파이썬 API 서버 주소
         .build();
   }
 
