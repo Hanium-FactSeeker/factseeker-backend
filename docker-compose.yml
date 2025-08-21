@@ -55,7 +55,7 @@ services:
     env_file:
       - .env            # 로컬 비밀값은 .env로 관리(커밋 금지)
     environment:
-      SPRING_PROFILES_ACTIVE: local
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE} #로컬에서 할 때는 local로 변경 필요
       # 필요 시 JAVA_OPTS 등 추가 오버라이드 가능
     depends_on:
       mysql:
