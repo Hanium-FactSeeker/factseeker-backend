@@ -1,29 +1,6 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: factseeker-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: factouserrds12
-      MYSQL_DATABASE: factseeker
-
-    ports:
-      - '3307:3306'
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d
-      - ./docker/mysql/conf:/etc/mysql/conf.d
-    networks:
-      - factseeker-network
-    healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD']
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
   redis:
     image: redis:7-alpine
     container_name: factseeker-redis
@@ -44,21 +21,16 @@ services:
       start_period: 30s
 
   factseeker-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: "${DOCKERHUB_USERNAME}/factseeker-backend:latest"
     container_name: factseeker-backend
     restart: unless-stopped
     ports:
       - '8080:8080'
     env_file:
-      - .env            # 로컬 비밀값은 .env로 관리(커밋 금지)
+      - .env
     environment:
       SPRING_PROFILES_ACTIVE: local
-      # 필요 시 JAVA_OPTS 등 추가 오버라이드 가능
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -72,7 +44,6 @@ services:
     volumes:
       - ./logs:/app/logs
 
-  # 선택: Nginx / Adminer는 필요 시 profiles로 사용
   nginx:
     image: nginx:alpine
     container_name: factseeker-nginx
@@ -91,21 +62,20 @@ services:
     profiles: [production]
 
   adminer:
-    image: adminer:latest
+    image: adminer
     container_name: factseeker-adminer
     restart: unless-stopped
     ports:
       - '8081:8080'
     environment:
-      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DEFAULT_SERVER: your-rds-endpoint
     depends_on:
-      - mysql
+      - redis
     networks:
       - factseeker-network
     profiles: [development]
 
 volumes:
-  mysql_data:
   redis_data:
 
 networks:
