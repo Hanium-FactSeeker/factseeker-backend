@@ -5,9 +5,9 @@ spring:
   profiles:
     group:
       local:
-        - application-local.yml
+        - local
       dev:
-        - application-dev.yml
+        - dev
 
   jpa:
     hibernate:
