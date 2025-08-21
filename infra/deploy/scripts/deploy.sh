@@ -3,7 +3,7 @@ set -e
 
 echo "📁 앱 디렉토리 설정"
 APP_DIR=/home/ubuntu/factseeker-backend-deploy
-IMAGE=docker.io/<your-dockerhub-username>/factseeker-backend:latest
+IMAGE=docker.io/jjjsukwoo/factseeker-backend:latest
 mkdir -p $APP_DIR
 
 echo "📄 .env 저장"
