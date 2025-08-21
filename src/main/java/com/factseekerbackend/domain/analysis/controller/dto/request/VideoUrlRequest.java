@@ -1,4 +1,6 @@
 package com.factseekerbackend.domain.analysis.controller.dto.request;
 
-public record VideoUrlRequest(String youtubeUrl) {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record VideoUrlRequest(@JsonProperty("youtube_url") String youtubeUrl) {
 }

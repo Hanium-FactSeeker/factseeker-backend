@@ -27,3 +27,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+  mvc:
+    async:
+      request-timeout: 370000

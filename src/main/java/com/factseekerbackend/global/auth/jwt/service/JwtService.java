@@ -68,7 +68,7 @@ public class JwtService {
   public String extractTokenFromRequest(HttpServletRequest request) {
     String bearerToken = request.getHeader("Authorization");
     if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-      return bearerToken.substring(7).trim();
+            return bearerToken.substring(7).trim();
     }
     throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
   }

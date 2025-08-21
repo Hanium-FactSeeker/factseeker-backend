@@ -1,7 +1,7 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
-import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.FastApiFactCheckResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
@@ -31,19 +31,25 @@ public class FactCheckResultService {
             FastApiFactCheckResponse dto = parse(json);
             if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return;
 
+            String claimsAsJson = om.writeValueAsString(dto.claims());
+
             Top10VideoAnalysis top10VideoAnalysis = top10VideoAnalysisRepository.findById(dto.videoId())
                     .orElseGet(() -> Top10VideoAnalysis.builder().videoId(dto.videoId()).build())
                     .toBuilder()
-                    .totalConfidenceScore(dto.totalConfidenceScore())
+                    .videoUrl(dto.videoUrl())
+                    .totalConfidenceScore(dto.videoTotalConfidenceScore())
                     .summary(dto.summary())
                     .channelType(dto.channelType())
                     .channelTypeReason(dto.channelTypeReason())
-                    .claims(dto.channelType())
+                    .claims(claimsAsJson)
+                    .keywords(dto.keywords())
+                    .threeLineSummary(dto.threeLineSummary())
                     .createdAt(dto.createdAt())
                     .build();
 
             top10VideoAnalysisRepository.save(top10VideoAnalysis);
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            log.error("Error in upsertFromFastApiResponse: {}", e.getMessage(), e);
         }
     }
 
@@ -53,11 +59,14 @@ public class FactCheckResultService {
 
         return VideoAnalysisResponse.builder()
                 .videoId(dto.videoId())
-                .totalConfidenceScore(dto.totalConfidenceScore())
+                .videoUrl(dto.videoUrl())
+                .totalConfidenceScore(dto.videoTotalConfidenceScore())
                 .summary(dto.summary())
                 .channelType(dto.channelType())
                 .channelTypeReason(dto.channelTypeReason())
-                .claims(dto.claims())
+                .claims(dto.claims()) // Pass the list of ClaimDto directly
+                .keywords(dto.keywords())
+                .threeLineSummary(dto.threeLineSummary())
                 .createdAt(dto.createdAt())
                 .status(VideoAnalysisStatus.COMPLETED)
                 .build();
@@ -68,21 +77,29 @@ public class FactCheckResultService {
             FastApiFactCheckResponse dto = parse(json);
             if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return;
 
+            String claimsAsJson = om.writeValueAsString(dto.claims());
+
             VideoAnalysis videoAnalysis = VideoAnalysis.builder()
                     .videoId(dto.videoId())
-                    .totalConfidenceScore(dto.totalConfidenceScore())
+                    .videoUrl(dto.videoUrl())
+                    .totalConfidenceScore(dto.videoTotalConfidenceScore())
                     .summary(dto.summary())
                     .channelType(dto.channelType())
                     .channelTypeReason(dto.channelTypeReason())
-                    .claims(dto.claims())
+                    .claims(claimsAsJson)
+                    .keywords(dto.keywords())
+                    .threeLineSummary(dto.threeLineSummary())
                     .user(userRepository.getReferenceById(userId))
                     .createdAt(dto.createdAt())
+                    .status(VideoAnalysisStatus.COMPLETED)
                     .build();
 
             videoAnalysisRepository.save(videoAnalysis);
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            log.error("Error in upsertFromFastApiResponseToUser: {}", e.getMessage(), e);
         }
     }
+
     private FastApiFactCheckResponse parse(String json) {
         try {
             return om.readValue(json, FastApiFactCheckResponse.class);
