@@ -33,7 +33,7 @@ public class RedisConfig {
   @Value("${spring.data.redis.database}")
   private int database;
 
-  @Value("${spring.app.redis.cache.database}")
+  @Value("${app.redis.cache.database}")
   private int cacheDatabase;
 
   @Bean(name = "redisConnectionFactory")
