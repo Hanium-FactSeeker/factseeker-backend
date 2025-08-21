@@ -1,8 +1,13 @@
 spring:
-  datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+  config:
+    activate:
+      on-profile: default
+  profiles:
+    group:
+      local:
+        - application-local.yml
+      dev:
+        - application-dev.yml
 
   jpa:
     hibernate:
