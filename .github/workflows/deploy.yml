@@ -31,7 +31,7 @@ jobs:
         run: ./gradlew clean build -x test
 
       - name: Copy JAR to Docker build context
-        run: cp build/libs/FactSeeker-0.0.1-SNAPSHOT.jar app.jar
+        run: cp build/libs/factseeker-backend-0.0.1-SNAPSHOT.jar app.jar
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -41,8 +41,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/FactSeeker-app:latest .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/FactSeeker-app:latest
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/factseeker-backend:latest
 
       - name: Upload Deploy Script to EC2
         uses: appleboy/scp-action@master
