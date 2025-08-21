@@ -1,8 +1,11 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
+import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
+import com.factseekerbackend.domain.analysis.service.fastapi.dto.FactCheckRequest;
 import com.factseekerbackend.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -23,6 +26,8 @@ public class FactCheckTriggerService {
     private final FactCheckResultService resultService; // RDS UPSERT 서비스
     private final VideoAnalysisRepository videoAnalysisRepository; // VideoAnalysisRepository 주입
     private final UserRepository userRepository;
+    private final ObjectMapper om;
+
     /**
      * FastAPI POST 호출 → 응답 JSON을 RDS에 UPSERT.
      */
@@ -31,7 +36,7 @@ public class FactCheckTriggerService {
         if (videoId == null || videoId.isBlank()) return;
 
         // videoId만 들어오면 전체 URL로 변환
-        String youtubeUrl = videoId.startsWith("http")
+        String youtubeUrl = videoId.startsWith("https")
                 ? videoId
                 : "https://www.youtube.com/watch?v=" + videoId;
 
@@ -40,13 +45,14 @@ public class FactCheckTriggerService {
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
+                String requestJson = om.writeValueAsString(new FactCheckRequest(youtubeUrl));
                 String response = fastApiClient.post()
                         .uri("/fact-check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .header("X-Idempotency-Key", videoId)
                         .header("X-Requested-By", "spring-cron")
-                        .body(Map.of("youtube_url", youtubeUrl))   // ★ JSON 바디로 전달
+                        .body(requestJson)
                         .retrieve()
                         .body(String.class);
 
@@ -93,13 +99,14 @@ public class FactCheckTriggerService {
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
+                String requestJson = om.writeValueAsString(new FactCheckRequest(youtubeUrl));
                 String response = fastApiClient.post()
                         .uri("/fact-check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .header("X-Idempotency-Key", videoId)
                         .header("X-Requested-By", "spring-cron")
-                        .body(Map.of("youtube_url", youtubeUrl))   // ★ JSON 바디로 전달
+                        .body(requestJson)
                         .retrieve()
                         .body(String.class);
 
@@ -131,7 +138,7 @@ public class FactCheckTriggerService {
     }
 
     @Async
-    public CompletableFuture<VideoAnalysis> triggerSingleToRdsToNotLogin(String videoId) {
+    public CompletableFuture<VideoAnalysisResponse> triggerSingleToRdsToNotLogin(String videoId) {
 
         if (videoId == null || videoId.isBlank()) {
             return CompletableFuture.completedFuture(null);
@@ -142,8 +149,8 @@ public class FactCheckTriggerService {
                 ? videoId
                 : "https://www.youtube.com/watch?v=" + videoId;
 
-        // 초기 VideoAnalysis 객체 생성 (DB에 저장하지 않음)
-        VideoAnalysis videoAnalysis = VideoAnalysis.builder()
+        // 초기 응답 상태만 표현
+        VideoAnalysisResponse pending = VideoAnalysisResponse.builder()
                 .videoId(videoId)
                 .status(VideoAnalysisStatus.PENDING)
                 .build();
@@ -153,26 +160,27 @@ public class FactCheckTriggerService {
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
+                String requestJson = om.writeValueAsString(new FactCheckRequest(youtubeUrl));
                 String response = fastApiClient.post()
                         .uri("/fact-check")
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .header("X-Idempotency-Key", videoId)
                         .header("X-Requested-By", "spring-cron")
-                        .body(Map.of("youtube_url", youtubeUrl))   // ★ JSON 바디로 전달
+                        .body(requestJson)
                         .retrieve()
                         .body(String.class);
 
-                // ▼ FastAPI 응답 JSON을 그대로 RDS에 저장 (요약 컬럼 + result_json)
-                videoAnalysis = resultService.upsertFromFastApiNotLogin(response).toBuilder()
-                        .status(VideoAnalysisStatus.COMPLETED)
-                        .build();
-                return CompletableFuture.completedFuture(videoAnalysis);
+                VideoAnalysisResponse dto = resultService.buildResponseFromFastApiNotLogin(response);
+                return CompletableFuture.completedFuture(dto);
 
             } catch (Exception e) {
                 log.warn("FastAPI 처리 실패 videoId={} (attempt {}/{}): {}",
                         videoId, attempt, maxAttempts, e.toString());
-                videoAnalysis = videoAnalysis.toBuilder().status(VideoAnalysisStatus.FAILED).build();
+                pending = VideoAnalysisResponse.builder()
+                        .videoId(videoId)
+                        .status(VideoAnalysisStatus.FAILED)
+                        .build();
                 try {
                     Thread.sleep(backoffMs);
                 } catch (InterruptedException ignored) {
@@ -182,7 +190,10 @@ public class FactCheckTriggerService {
             }
         }
         log.error("최대 재시도 횟수(" + maxAttempts + "회)를 초과했습니다. videoId: " + videoId);
-        videoAnalysis = videoAnalysis.toBuilder().status(VideoAnalysisStatus.FAILED).build();
-        return CompletableFuture.completedFuture(videoAnalysis);
+        pending = VideoAnalysisResponse.builder()
+                .videoId(videoId)
+                .status(VideoAnalysisStatus.FAILED)
+                .build();
+        return CompletableFuture.completedFuture(pending);
     }
 }

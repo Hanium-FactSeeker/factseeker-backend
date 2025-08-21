@@ -1,5 +1,8 @@
 # 공통 설정만 남기고, 민감값/환경별 값은 프로필로 분리
 spring:
+  mvc:
+    async:
+      request-timeout: 370000
   output:
     ansi:
       enabled: always

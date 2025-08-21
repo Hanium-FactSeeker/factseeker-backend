@@ -4,22 +4,27 @@ import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Top10VideoAnalysis extends BaseEntity {
+public class Top10VideoAnalysis {
     @Id
     @Column(name = "video_id", length = 32, nullable = false)
     private String videoId;
 
+    @Column(name = "video_url", length = 255)
+    private String videoUrl;
+
     @Column(name = "total_confidence_score")
     private Integer totalConfidenceScore;
 
-    // 코드 기준 키 이름은 summary (예시 JSON의 confidence_summary 아님)
     @Column(name = "summary", columnDefinition = "TEXT")
     private String summary;
 
@@ -29,7 +34,16 @@ public class Top10VideoAnalysis extends BaseEntity {
     @Column(name = "channel_type_reason", columnDefinition = "TEXT")
     private String channelTypeReason;
 
-    @Column(name = "result_json", columnDefinition = "JSON")
-    private String resultJson;
+    @Column(name = "claims", columnDefinition = "JSON")
+    private String claims;
+
+    @Column(name = "keywords", columnDefinition = "TEXT")
+    private String keywords;
+
+    @Column(name = "three_line_summary", columnDefinition = "TEXT")
+    private String threeLineSummary;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 }
 
