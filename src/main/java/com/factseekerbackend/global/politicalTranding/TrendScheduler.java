@@ -2,9 +2,8 @@ package com.factseekerbackend.global.politicalTranding;
 
 import com.factseekerbackend.global.politicalTranding.dto.TrendApiResponse;
 import com.factseekerbackend.global.politicalTranding.service.TrendService;
-import jakarta.annotation.PostConstruct;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,13 +12,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Component
 public class TrendScheduler {
 
+  @Value("${fastapi.trends-url}")
+  private String trendsUrl;
   private final WebClient webClient;
   private final TrendService trendService;
 
   public TrendScheduler(TrendService trendService) {
     this.trendService = trendService;
     this.webClient = WebClient.builder()
-        .baseUrl("http://13.125.50.153") // 파이썬 API 서버 주소
+        .baseUrl(trendsUrl) // 파이썬 API 서버 주소
         .build();
   }
 
