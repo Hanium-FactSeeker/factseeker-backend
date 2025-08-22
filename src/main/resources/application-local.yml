@@ -18,6 +18,8 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1
+      repositories:
+        enabled: false
 
   app:
     redis:
@@ -31,3 +33,10 @@ spring:
   mvc:
     async:
       request-timeout: 370000
+
+# Naver API settings
+naver:
+  base-url: https://openapi.naver.com
+  client:
+    id: YOUR_NAVER_CLIENT_ID
+    secret: YOUR_NAVER_CLIENT_SECRET
