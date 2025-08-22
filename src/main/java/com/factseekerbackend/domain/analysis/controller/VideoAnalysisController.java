@@ -132,8 +132,25 @@ public class VideoAnalysisController {
     }
   
   
+        @Operation(
+        summary = "Top 10 비디오 분석 결과 조회",
+        description = "특정 Top 10 비디오 ID에 대한 분석 결과를 조회합니다."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "분석 결과 조회 성공",
+            content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "202",
+            description = "분석 진행 중",
+            content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
+        )
+    })
     @GetMapping("/top10/{videoId}")
     public ResponseEntity<VideoAnalysisResponse> getTop10VideoAnalysis(
+            @Parameter(description = "비디오 ID", example = "exampleVideoId")
             @PathVariable("videoId") String videoId) {
         return top10VideoAnalysisRepository.findById(videoId)
                 .map(analysis -> {
@@ -144,6 +161,24 @@ public class VideoAnalysisController {
                         .videoId(videoId)
                         .status(VideoAnalysisStatus.PENDING)
                         .build()));
+    }
+
+        @Operation(
+        summary = "Top 10 유튜브 키워드 조회",
+        description = "특정 Top 10 비디오 ID에 대한 키워드를 조회합니다."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "키워드 조회 성공",
+            content = @Content(schema = @Schema(implementation = KeywordsResponse.class))
+        )
+    })
+    @GetMapping("top10/{videoId}/keywords")
+    public ResponseEntity<ApiResponse<KeywordsResponse>> getTop10YoutubeKeywords(
+            @Parameter(description = "비디오 ID", example = "exampleVideoId")
+            @PathVariable String videoId) {
+        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.",videoAnalysisService.getTop10YoutubeKeywords(videoId)));
     }
 
     private Object parseClaims(String claimsJson) {
@@ -158,9 +193,5 @@ public class VideoAnalysisController {
         }
     }
 
-    @GetMapping("top10/{videoId}/keywords")
-    public ResponseEntity<ApiResponse<KeywordsResponse>> getTop10YoutubeKeywords(
-            @PathVariable String videoId) {
-        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.",videoAnalysisService.getTop10YoutubeKeywords(videoId)));
-    }
+
 }

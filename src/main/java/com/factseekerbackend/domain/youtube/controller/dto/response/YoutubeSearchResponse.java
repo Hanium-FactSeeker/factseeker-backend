@@ -24,10 +24,19 @@ public class YoutubeSearchResponse {
     }
 
     public static YoutubeSearchResponse from(SearchResult searchResult) {
+        String thumbnailUrl = null;
+        if (searchResult.getSnippet() != null && searchResult.getSnippet().getThumbnails() != null) {
+            if (searchResult.getSnippet().getThumbnails().getHigh() != null) {
+                thumbnailUrl = searchResult.getSnippet().getThumbnails().getHigh().getUrl();
+            } else if (searchResult.getSnippet().getThumbnails().getDefault() != null) {
+                thumbnailUrl = searchResult.getSnippet().getThumbnails().getDefault().getUrl();
+            }
+        }
+
         return YoutubeSearchResponse.builder()
                 .url("https://www.youtube.com/watch?v=" + searchResult.getId().getVideoId())
                 .videoTitle(searchResult.getSnippet().getTitle())
-                .thumbnailUrl(searchResult.getSnippet().getThumbnails().getDefault().getUrl())
+                .thumbnailUrl(thumbnailUrl)
                 .updatedAt(searchResult.getSnippet().getPublishedAt().toString())
                 .build();
     }
