@@ -79,7 +79,8 @@ public class SecurityConfig {
         .authenticationProvider(authenticationProvider())
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**","/api/check/**").permitAll()
-            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**","/api/analysis/**").permitAll() // 테스트용 - 추후 제거
+            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll()// 테스트용 - 추후 제거
+            .requestMatchers("/api/analysis/**", "api/youtube/**").permitAll()
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
                 .anyRequest().authenticated())
         .oauth2Login(oauth2 -> oauth2
