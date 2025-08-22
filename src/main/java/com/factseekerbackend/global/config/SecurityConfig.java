@@ -78,10 +78,12 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .authenticationProvider(authenticationProvider())
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**","/api/check/**").permitAll()
-            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll() // 테스트용 - 추후 제거
-            .requestMatchers("/api/trends/**").permitAll() //임시 먹용 추후 삭제예정
-            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
+            .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**", "/api/check/**")
+            .permitAll()
+            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll()
+            .requestMatchers("/api/trends/**", "/api/analysis/**", "api/youtube/**").permitAll()
+            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
+                "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
             .anyRequest().authenticated())
         .oauth2Login(oauth2 -> oauth2
             .authorizationEndpoint(authorization -> authorization
@@ -103,7 +105,8 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(
-        Arrays.asList(clientUrl, "http://localhost:3000", "https://fact-seeker.com", "https://prod.fact-seeker.com")); // React 개발 서버 + Swagger
+        Arrays.asList(clientUrl, "http://localhost:3000", "https://fact-seeker.com",
+            "https://prod.fact-seeker.com")); // React 개발 서버 + Swagger
     configuration.setAllowedMethods(
         Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("*"));
