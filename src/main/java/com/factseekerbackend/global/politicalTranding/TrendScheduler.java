@@ -23,12 +23,6 @@ public class TrendScheduler {
         .build();
   }
 
-  @PostConstruct
-  public void initTrendsData() {
-    log.info("Initializing trends data at application startup...");
-    fetchTrendsFromPython();
-  }
-
   @Scheduled(fixedRate = 600000)
   public void fetchTrendsFromPython() {
     log.info("Fetching trends from Python API...");
