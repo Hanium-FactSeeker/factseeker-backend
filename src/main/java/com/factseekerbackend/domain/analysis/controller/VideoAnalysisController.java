@@ -4,6 +4,7 @@ import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequ
 import com.factseekerbackend.domain.analysis.controller.dto.response.ClaimDto;
 import com.factseekerbackend.domain.analysis.controller.dto.response.KeywordsResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.AnalysisStartResponse;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
 import com.factseekerbackend.domain.analysis.service.fastapi.FactCheckTriggerService;
@@ -108,9 +109,14 @@ public class VideoAnalysisController {
             if (userDetails != null) {
                 Long userId = userDetails.getId();
                 log.info("[API] 로그인 사용자 분석 요청 - User ID: {}", userId);
-                factCheckTriggerService.triggerSingleToRdsToUser(youtubeUrl, userId);
+                Long analysisId = factCheckTriggerService.triggerAndReturnId(youtubeUrl, userId);
                 return CompletableFuture.completedFuture(
-                    ResponseEntity.ok(ApiResponse.success("비디오 분석이 성공적으로 요청되었습니다."))
+                    ResponseEntity.ok(
+                        ApiResponse.success(
+                            "비디오 분석이 성공적으로 요청되었습니다.",
+                            new AnalysisStartResponse(analysisId, VideoAnalysisStatus.PENDING)
+                        )
+                    )
                 );
             } else {
                 log.info("[API] 비로그인 사용자 분석 요청");

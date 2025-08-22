@@ -100,6 +100,37 @@ public class FactCheckResultService {
         }
     }
 
+    /**
+     * 기존 VideoAnalysis 레코드(ID 기반)를 FastAPI 응답 내용으로 업데이트한다.
+     */
+    public void updateExistingFromFastApiResponseToUser(String json, Long videoAnalysisId) {
+        try {
+            FastApiFactCheckResponse dto = parse(json);
+            if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return;
+
+            String claimsAsJson = om.writeValueAsString(dto.claims());
+
+            videoAnalysisRepository.findById(videoAnalysisId).ifPresent(existing -> {
+                VideoAnalysis updated = existing.toBuilder()
+                        .videoId(dto.videoId())
+                        .videoUrl(dto.videoUrl())
+                        .totalConfidenceScore(dto.videoTotalConfidenceScore())
+                        .summary(dto.summary())
+                        .channelType(dto.channelType())
+                        .channelTypeReason(dto.channelTypeReason())
+                        .claims(claimsAsJson)
+                        .keywords(dto.keywords())
+                        .threeLineSummary(dto.threeLineSummary())
+                        .createdAt(dto.createdAt())
+                        .status(VideoAnalysisStatus.COMPLETED)
+                        .build();
+                videoAnalysisRepository.save(updated);
+            });
+        } catch (Exception e) {
+            log.error("Error in updateExistingFromFastApiResponseToUser: {}", e.getMessage(), e);
+        }
+    }
+
     private FastApiFactCheckResponse parse(String json) {
         try {
             return om.readValue(json, FastApiFactCheckResponse.class);

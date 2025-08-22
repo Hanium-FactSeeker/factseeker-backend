@@ -18,7 +18,7 @@ public class VideoAnalysis {
     @Column(name = "video_analysis_id")
     private Long id;
 
-    @Column(name = "video_id", length = 32, nullable = false)
+    @Column(name = "video_id", length = 225, nullable = false)
     private String videoId;
 
     @Column(name = "video_url", length = 255)
