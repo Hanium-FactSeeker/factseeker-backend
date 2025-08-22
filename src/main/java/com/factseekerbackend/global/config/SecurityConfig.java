@@ -105,7 +105,7 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(
-        Arrays.asList(clientUrl, "http://localhost:3000")); // React 개발 서버
+        Arrays.asList(clientUrl, "http://localhost:3000", "http://localhost:8080")); // React 개발 서버
     configuration.setAllowedMethods(
         Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("*"));
