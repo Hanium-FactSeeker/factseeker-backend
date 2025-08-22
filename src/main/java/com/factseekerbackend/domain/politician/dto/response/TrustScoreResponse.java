@@ -1,4 +1,4 @@
-package com.factseekerbackend.domain.politician.controller.dto.response;
+package com.factseekerbackend.domain.politician.dto.response;
 
 import com.factseekerbackend.domain.politician.entity.AnalysisStatus;
 import com.factseekerbackend.domain.politician.entity.PoliticianTrustScore;
@@ -15,6 +15,7 @@ public class TrustScoreResponse {
     private Long id;
     private Long politicianId;
     private String politicianName;
+    private String politicianParty;
     private LocalDate analysisDate;
     private String analysisPeriod;
     
@@ -49,6 +50,7 @@ public class TrustScoreResponse {
                 .id(trustScore.getId())
                 .politicianId(trustScore.getPolitician().getId())
                 .politicianName(trustScore.getPolitician().getName())
+                .politicianParty(trustScore.getPolitician().getParty())
                 .analysisDate(trustScore.getAnalysisDate())
                 .analysisPeriod(trustScore.getAnalysisPeriod())
                 .overallScore(trustScore.getOverallScore())
