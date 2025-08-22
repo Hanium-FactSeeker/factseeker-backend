@@ -2,25 +2,30 @@ package com.factseekerbackend.domain.youtube.service;
 
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoDto;
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoListResponseDto;
-import com.google.api.services.youtube.model.Thumbnail;
-import com.google.api.services.youtube.model.ThumbnailDetails;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Array;
+import java.io.IOException;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PopularPoliticsService {
 
     private final YoutubeService youtubeService;
+    private final ObjectMapper objectMapper;
 
     @Qualifier("cacheRedisTemplate")
     private final RedisTemplate<String, Object> cacheRedis;
@@ -28,101 +33,94 @@ public class PopularPoliticsService {
     private static final String KEY_PREFIX = "popular:politics:KR";
     private static final Duration TTL = Duration.ofMinutes(70);
 
-    /**
-     * 프론트 엔드포인트에서 호출:
-     * - Redis 해시에서 순위별로 읽어 리스트 구성
-     * - timestamp는 Redis의 updatedAt(보통 rank:1)에 저장된 값 사용
-     * - 캐시 미스/불완전 시 YouTube로 보충(refreshTopN) 후 다시 Redis에서 읽어 반환
-     */
     public VideoListResponseDto getPopularPolitics(int size) {
+        List<VideoDto> data = readFromRedis(size);
+        String timestamp = getTimestampFromRedis();
+
+        if (data.size() < size || timestamp == null) {
+            log.info("Popular politics cache miss or incomplete. Refreshing cache for size: {}", size);
+            try {
+                VideoListResponseDto refreshedData = refreshTopN(size);
+                data = refreshedData.data();
+                timestamp = refreshedData.timestamp();
+            } catch (Exception e) {
+                log.error("Failed to refresh popular politics cache. Returning empty list.", e);
+                return VideoListResponseDto.from(List.of(), nowSeoul());
+            }
+        }
+
+        return VideoListResponseDto.from(data, timestamp);
+    }
+
+    public VideoListResponseDto refreshTopN(int size) throws IOException {
+        log.info("Fetching top {} popular politics videos from YouTube service.", size);
+        VideoListResponseDto fetchedDto = youtubeService.getPopularPoliticsTop10Resp(size);
+        List<VideoDto> videoList = (fetchedDto != null && fetchedDto.data() != null) ? fetchedDto.data() : List.of();
+
+        if (videoList.isEmpty()) {
+            log.warn("Fetched popular politics list from YouTube is empty. Cache will not be updated.");
+            return VideoListResponseDto.from(List.of(), nowSeoul());
+        }
+
+        log.info("Updating Redis cache with {} videos.", videoList.size());
+        
         HashOperations<String, Object, Object> hashOps = cacheRedis.opsForHash();
 
-        // 1) timestamp(=updatedAt)는 rank:1 해시에서 한 번만 읽음
-        String timestampFromRedis = (String) hashOps.get(rankKey(1), "updatedAt");
+        for (int i = 0; i < videoList.size(); i++) {
+            int rank = i + 1;
+            VideoDto video = videoList.get(i);
+            String key = rankKey(rank);
+            
+            Map<String, Object> videoMap = Map.of(
+                "videoId", video.videoId(),
+                "videoTitle", video.videoTitle(),
+                "thumbnailUrl", video.thumbnailUrl() != null ? video.thumbnailUrl() : "",
+                "updatedAt", fetchedDto.timestamp()
+            );
 
-        // 2) 리스트 조립
-        List<VideoDto> data = readFromRedis(size);
-
-        // 3) 캐시 미스/불완전 → 보충하고 다시 읽기 (timestamp도 항상 Redis에서만 읽음)
-        if (data.size() < size || timestampFromRedis == null) {
-            refreshTopN(size);
-            timestampFromRedis = (String) hashOps.get(rankKey(1), "updatedAt");
-            data = readFromRedis(size);
+            hashOps.putAll(key, videoMap);
+            cacheRedis.expire(key, TTL);
+        }
+        
+        for (int i = videoList.size(); i < 20; i++) {
+             int rank = i + 1;
+             cacheRedis.delete(rankKey(rank));
         }
 
-        // 4) 최종 응답
-        return VideoListResponseDto.from(
-                data,
-                (timestampFromRedis != null) ? timestampFromRedis : nowSeoul() // 안전망
-        );
+        log.info("Successfully updated Redis cache for popular politics videos.");
+
+        return fetchedDto;
     }
-
-    /**
-     * 스케줄러/보충 공용:
-     * - YouTube에서 TopN 리스트를 받아옴
-     * - 이번 갱신 시각(ts)을 한 번 생성
-     * - Redis 해시(popular:politics:KR:rank:{n})에 videoId/videoTitle/thumbnailUrl/updatedAt 저장
-     * - 응답의 timestamp도 동일한 ts로 반환
-     */
-    public void refreshTopN(int size) {
-        try {
-            VideoListResponseDto fetched = youtubeService.getPopularPoliticsTop10Resp(size);
-            List<VideoDto> list = (fetched != null && fetched.data() != null) ? fetched.data() : List.of();
-
-            // 이번 갱신 시각(=업데이트 시간) — 단 한 번 생성
-            String ts = nowSeoul();
-
-            HashOperations<String, Object, Object> hashOps = cacheRedis.opsForHash();
-            int limit = Math.min(list.size(), size);
-
-            for (int i = 0; i < limit; i++) {
-                int rank = i + 1;
-                VideoDto video = list.get(i);
-
-                String id = video.videoId();
-                String title = video.videoTitle();
-
-                String thumb = extractThumbUrl(video);
-                if (thumb == null || thumb.isBlank()) {
-                    thumb = "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg";
-                }
-
-                String key = rankKey(rank);
-                hashOps.put(key, "videoId", id);
-                hashOps.put(key, "videoTitle", title);
-                hashOps.put(key, "thumbnailUrl", thumb);
-                hashOps.put(key, "updatedAt", ts);
-                cacheRedis.expire(key, TTL);
-            }
-
-            // 응답도 같은 ts 사용
-            VideoListResponseDto.from(list, ts);
-
-        } catch (Exception e) {
-            // 실패 시 빈 리스트 + now 반환(로그는 상황에 맞게 추가)
-            VideoListResponseDto.from(List.of(), nowSeoul());
-        }
-    }
-
 
     private List<VideoDto> readFromRedis(int size) {
         HashOperations<String, Object, Object> hashOps = cacheRedis.opsForHash();
-        ArrayList<VideoDto> data = new ArrayList<>(size);
+        List<VideoDto> data = new ArrayList<>(size);
 
         for (int rank = 1; rank <= size; rank++) {
             String key = rankKey(rank);
-            Map<Object, Object> m = hashOps.entries(key);
+            Map<Object, Object> videoMap = hashOps.entries(key);
 
-            if (!m.isEmpty()) {
-                String id = (String) m.get("videoId");
-                String title = (String) m.get("videoTitle");
-                String thumbUrl = (String) m.get("thumbnailUrl");
-                if (id != null && title != null) {
-                    data.add(new VideoDto(id, title, toThumbnailDetails(thumbUrl)));
+            if (!videoMap.isEmpty() && videoMap.get("videoId") != null) {
+                try {
+                    VideoDto dto = objectMapper.convertValue(videoMap, VideoDto.class);
+                    data.add(dto);
+                } catch (IllegalArgumentException e) {
+                    log.error("Failed to convert Redis hash to VideoDto for key: {}", key, e);
                 }
+            } else {
+                break;
             }
         }
         return data;
+    }
+    
+    private String getTimestampFromRedis() {
+        String rankOneKey = rankKey(1);
+        Long ttl = cacheRedis.getExpire(rankOneKey, TimeUnit.SECONDS);
+        if (ttl != null && ttl > 0) {
+            return (String) cacheRedis.opsForHash().get(rankOneKey, "updatedAt");
+        }
+        return null;
     }
 
     private String rankKey(int rank) {
@@ -130,26 +128,6 @@ public class PopularPoliticsService {
     }
 
     private String nowSeoul() {
-        return java.time.OffsetDateTime.now(java.time.ZoneId.of("Asia/Seoul")).toString();
-    }
-
-    private String extractThumbUrl(VideoDto v) {
-        if (v == null || v.thumbnailDetails() == null) return null;
-        ThumbnailDetails td = v.thumbnailDetails();
-        if (td.getMaxres() != null && td.getMaxres().getUrl() != null) return td.getMaxres().getUrl();
-        if (td.getStandard() != null && td.getStandard().getUrl() != null) return td.getStandard().getUrl();
-        if (td.getHigh() != null && td.getHigh().getUrl() != null) return td.getHigh().getUrl();
-        if (td.getMedium() != null && td.getMedium().getUrl() != null) return td.getMedium().getUrl();
-        if (td.getDefault() != null && td.getDefault().getUrl() != null) return td.getDefault().getUrl();
-        return null;
-    }
-
-    private ThumbnailDetails toThumbnailDetails(String url) {
-        if (url == null || url.isBlank()) return null;
-        Thumbnail h = new Thumbnail();
-        h.setUrl(url);
-        ThumbnailDetails td = new ThumbnailDetails();
-        td.setHigh(h);
-        return td;
+        return OffsetDateTime.now(ZoneId.of("Asia/Seoul")).toString();
     }
 }
