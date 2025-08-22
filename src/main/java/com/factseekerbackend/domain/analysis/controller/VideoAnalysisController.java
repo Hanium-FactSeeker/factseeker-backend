@@ -2,6 +2,7 @@ package com.factseekerbackend.domain.analysis.controller;
 
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.ClaimDto;
+import com.factseekerbackend.domain.analysis.controller.dto.response.KeywordsResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
@@ -151,4 +152,9 @@ public class VideoAnalysisController {
         }
     }
 
+    @GetMapping("top10/{videoId}/keywords")
+    public ResponseEntity<ApiResponse<KeywordsResponse>> getTop10YoutubeKeywords(
+            @PathVariable String videoId) {
+        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.",videoAnalysisService.getTop10YoutubeKeywords(videoId)));
+    }
 }
