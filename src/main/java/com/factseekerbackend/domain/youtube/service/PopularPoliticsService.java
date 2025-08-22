@@ -117,7 +117,7 @@ public class PopularPoliticsService {
     private String getTimestampFromRedis() {
         String rankOneKey = rankKey(1);
         Long ttl = cacheRedis.getExpire(rankOneKey, TimeUnit.SECONDS);
-        if (ttl != null && ttl > 0) {
+        if (ttl > 0) {
             return (String) cacheRedis.opsForHash().get(rankOneKey, "updatedAt");
         }
         return null;
