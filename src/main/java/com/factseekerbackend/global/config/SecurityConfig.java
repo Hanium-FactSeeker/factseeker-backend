@@ -81,7 +81,7 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**", "/api/check/**")
             .permitAll()
             .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll()
-            .requestMatchers("/api/trends/**", "/api/analysis/**").permitAll()
+            .requestMatchers("/api/trends/**", "/api/analysis/**", "api/youtube/**").permitAll()
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
                 "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
             .anyRequest().authenticated())

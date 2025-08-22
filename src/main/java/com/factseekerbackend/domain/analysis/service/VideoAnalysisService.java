@@ -1,8 +1,11 @@
 package com.factseekerbackend.domain.analysis.service;
 
 import com.factseekerbackend.domain.analysis.controller.dto.response.ClaimDto;
+import com.factseekerbackend.domain.analysis.controller.dto.response.KeywordsResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
+import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -22,6 +26,7 @@ import java.util.List;
 public class VideoAnalysisService {
 
     private final VideoAnalysisRepository repository;
+    private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
     private final ObjectMapper om;
 
     public VideoAnalysisResponse getVideoAnalysis(Long userId, Long videoAnalysisId) {
@@ -45,5 +50,10 @@ public class VideoAnalysisService {
             // 여기서는 비어있는 리스트를 반환하여 프론트엔드의 일관성을 유지합니다.
             return Collections.emptyList();
         }
+    }
+
+    public KeywordsResponse getTop10YoutubeKeywords(String videoId) {
+        Optional<Top10VideoAnalysis> top10VideoAnalysis = top10VideoAnalysisRepository.findById(videoId);
+        return KeywordsResponse.from(top10VideoAnalysis.orElseThrow());
     }
 }
