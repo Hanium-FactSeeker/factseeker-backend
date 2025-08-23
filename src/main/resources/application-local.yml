@@ -41,5 +41,5 @@ spring:
 naver:
   base-url: https://openapi.naver.com
   client:
-    id: YOUR_NAVER_CLIENT_ID
-    secret: YOUR_NAVER_CLIENT_SECRET
+    id: ${NAVER_CLIENT_ID}
+    secret: ${NAVER_CLIENT_SECRET}
