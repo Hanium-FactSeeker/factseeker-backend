@@ -7,10 +7,20 @@ spring:
     ansi:
       enabled: always
   jpa:
-    show-sql: true
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: update  # dev/prod에서 필요 시 오버라이드
+      ddl-auto: validate
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
+      timeout: 2000ms
   mail:
     host: smtp.gmail.com
     port: 587
@@ -101,3 +111,10 @@ springdoc:
     operations-sorter: alpha
   packages-to-scan: com.factseekerbackend
   paths-to-match: /api/**
+
+  # Naver API settings
+naver:
+  base-url: https://openapi.naver.com
+  client:
+    id: ${NAVER_CLIENT_ID}
+    secret: ${NAVER_CLIENT_SECRET}
