@@ -1,14 +1,14 @@
 package com.factseekerbackend.domain.politician.controller;
 
-import com.factseekerbackend.domain.politician.dto.response.TrustScoreResponse;
+import com.factseekerbackend.domain.politician.dto.SortType;
 import com.factseekerbackend.domain.politician.dto.request.PoliticianNameRequest;
+import com.factseekerbackend.domain.politician.dto.response.PagedPoliticiansResponse;
+import com.factseekerbackend.domain.politician.dto.response.PagedPoliticiansWithScoresResponse;
+import com.factseekerbackend.domain.politician.dto.response.PagedTrustScoreResponse;
 import com.factseekerbackend.domain.politician.dto.response.PoliticianResponse;
 import com.factseekerbackend.domain.politician.dto.response.PoliticianWithScore;
 import com.factseekerbackend.domain.politician.dto.response.TopNamesWithScoresResponse;
-import com.factseekerbackend.domain.politician.dto.response.PagedPoliticiansWithScoresResponse;
-import com.factseekerbackend.domain.politician.dto.response.PagedPoliticiansResponse;
-import com.factseekerbackend.domain.politician.dto.response.PagedTrustScoreResponse;
-import com.factseekerbackend.domain.politician.dto.SortType;
+import com.factseekerbackend.domain.politician.dto.response.TrustScoreResponse;
 import com.factseekerbackend.domain.politician.entity.Politician;
 import com.factseekerbackend.domain.politician.entity.PoliticianTrustScore;
 import com.factseekerbackend.domain.politician.repository.PoliticianRepository;
@@ -27,9 +27,10 @@ import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -173,8 +174,8 @@ public class PoliticianController {
   }
 
   @Operation(
-      summary = "전체 정치인 조회",
-      description = "활성화된 모든 정치인의 정보를 조회합니다."
+      summary = "전체 정치인 조회 (페이지네이션 X)",
+      description = "모든 정치인의 정보를 페이지네이션 없이 조회합니다."
   )
   @ApiResponses({
       @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -185,7 +186,8 @@ public class PoliticianController {
   })
   @GetMapping
   public ResponseEntity<ApiResponse<List<PoliticianResponse>>> getAllPoliticians() {
-    List<Politician> politicians = politicianRepository.findAllActiveOrderByName();
+    Sort sort = Sort.by(Sort.Direction.ASC, "name");
+    List<Politician> politicians = politicianRepository.findAll(sort);
     List<PoliticianResponse> responses = politicians.stream()
         .map(PoliticianResponse::from)
         .collect(Collectors.toList());
@@ -195,7 +197,7 @@ public class PoliticianController {
 
   @Operation(
       summary = "전체 정치인 페이지네이션 조회",
-      description = "활성화된 모든 정치인의 모든 정보를 페이지별로 조회합니다. (전체 약 550명, 최대 50명/페이지, 최대 55페이지)"
+      description = "모든 정치인의 모든 정보를 페이지별로 조회합니다. (전체 약 550명, 최대 50명/페이지, 최대 55페이지)"
   )
   @ApiResponses({
       @io.swagger.v3.oas.annotations.responses.ApiResponse(

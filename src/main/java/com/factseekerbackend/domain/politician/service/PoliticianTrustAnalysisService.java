@@ -42,7 +42,7 @@ public class PoliticianTrustAnalysisService {
     public void analyzeAllPoliticians() {
         log.info("[BATCH] 정치인 신뢰도 분석 배치 시작");
         
-        List<Politician> politicians = politicianRepository.findByIsActiveTrue();
+        List<Politician> politicians = politicianRepository.findAll();
         LocalDate analysisDate = LocalDate.now();
         String analysisPeriod = "2020-2025";
         

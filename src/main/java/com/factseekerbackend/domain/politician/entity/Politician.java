@@ -1,11 +1,5 @@
 package com.factseekerbackend.domain.politician.entity;
 
-import java.time.LocalDateTime;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -17,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "politicians")
@@ -53,14 +48,6 @@ public class Politician {
     @Column(name = "profile_image_url", length = 512)
     private String profileImageUrl;
 
-    @Column(nullable = false)
-    private boolean isActive = true;
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-
     @Builder
     public Politician(String name, String birthDate, String party, String facebookUrl, String instagramUrl, String xUrl, String youtubeUrl, String profileImageUrl) {
         this.name = name;
@@ -73,11 +60,4 @@ public class Politician {
         this.profileImageUrl = profileImageUrl;
     }
 
-    public void deactivate() {
-        this.isActive = false;
-    }
-
-    public void activate() {
-        this.isActive = true;
-    }
 }
