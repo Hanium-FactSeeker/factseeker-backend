@@ -98,3 +98,10 @@ springdoc:
     operations-sorter: alpha
   packages-to-scan: com.factseekerbackend
   paths-to-match: /api/**
+
+  # Naver API settings
+naver:
+  base-url: https://openapi.naver.com
+  client:
+    id: YOUR_NAVER_CLIENT_ID
+    secret: YOUR_NAVER_CLIENT_SECRET
