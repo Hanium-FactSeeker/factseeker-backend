@@ -7,10 +7,20 @@ spring:
     ansi:
       enabled: always
   jpa:
-    show-sql: true
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: update  # dev/prod에서 필요 시 오버라이드
+      ddl-auto: validate
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
+      timeout: 2000ms
   mail:
     host: smtp.gmail.com
     port: 587
@@ -57,6 +67,9 @@ spring:
 app:
   mail:
     from: ${spring.mail.username}
+  redis:
+    cache:
+      database: ${APP_REDIS_CACHE_DATABASE:1}
 
 oauth2:
   authorized-redirect-uris: ${OAUTH2_AUTHORIZED_REDIRECT_URIS:http://localhost:3000}
