@@ -43,3 +43,4 @@ out/
 .history
 .env.local
 .env.dev
+.env

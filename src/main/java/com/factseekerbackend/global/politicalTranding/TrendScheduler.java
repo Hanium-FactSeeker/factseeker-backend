@@ -4,6 +4,7 @@ import com.factseekerbackend.global.politicalTranding.dto.TrendApiResponse;
 import com.factseekerbackend.global.politicalTranding.service.TrendService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,20 +13,21 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Component
 public class TrendScheduler {
 
-  private final WebClient webClient;
+  @Value("${fastapi.trends-url}")
+  private String trendsUrl;
+
+  private WebClient webClient;
   private final TrendService trendService;
 
   public TrendScheduler(TrendService trendService) {
     this.trendService = trendService;
-    this.webClient = WebClient.builder()
-        .baseUrl("http://localhost:5001") // 파이썬 API 서버 주소
-        .build();
   }
 
   @PostConstruct
-  public void initTrendsData() {
-    log.info("Initializing trends data at application startup...");
-    fetchTrendsFromPython();
+  public void init() {
+    this.webClient = WebClient.builder()
+        .baseUrl(trendsUrl)
+        .build();
   }
 
   @Scheduled(fixedRate = 600000)
@@ -33,11 +35,10 @@ public class TrendScheduler {
     log.info("Fetching trends from Python API...");
 
     webClient.get()
-        .uri("/api/trends") // 파이썬 API 엔드포인트
+        .uri("/api/trends")
         .retrieve()
         .bodyToMono(TrendApiResponse.class)
         .doOnError(error -> log.error("Failed to fetch trends from Python API: {}", error.getMessage()))
         .subscribe(response -> trendService.updateTrends(response.getTrends()));
   }
-
 }

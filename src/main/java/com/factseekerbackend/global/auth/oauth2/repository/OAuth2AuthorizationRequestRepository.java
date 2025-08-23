@@ -18,6 +18,8 @@ public class OAuth2AuthorizationRequestRepository implements
 
   @Override
   public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
+    log.debug("OAuth2AuthorizationRequest 로드 시도");
+    
     return CookieUtils.getCookie(request, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME)
         .map(cookie -> CookieUtils.deserialize(cookie, OAuth2AuthorizationRequest.class))
         .orElse(null);
@@ -42,11 +44,13 @@ public class OAuth2AuthorizationRequestRepository implements
   public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest,
       HttpServletRequest request, HttpServletResponse response) {
     if (authorizationRequest == null) {
+      log.debug("OAuth2AuthorizationRequest null - 쿠키 삭제");
       CookieUtils.deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
       CookieUtils.deleteCookie(request, response, REDIRECT_URI_PARAM_COOKIE_NAME);
       return;
     }
 
+    log.debug("OAuth2AuthorizationRequest 저장, state={}", authorizationRequest.getState());
     CookieUtils.addCookie(response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME,
         CookieUtils.serialize(authorizationRequest), COOKIE_EXPIRE_SECONDS);
 
@@ -60,7 +64,11 @@ public class OAuth2AuthorizationRequestRepository implements
   @Override
   public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
       HttpServletResponse response) {
-    return this.loadAuthorizationRequest(request);
+    OAuth2AuthorizationRequest authorizationRequest = this.loadAuthorizationRequest(request);
+    if (authorizationRequest != null) {
+      this.removeAuthorizationRequestCookies(request, response);
+    }
+    return authorizationRequest;
   }
 
   public void removeAuthorizationRequestCookies(HttpServletRequest request,

@@ -3,6 +3,8 @@ package com.factseekerbackend.domain.politician.repository;
 import com.factseekerbackend.domain.politician.entity.Politician;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -16,6 +18,9 @@ public interface PoliticianRepository extends JpaRepository<Politician, Long> {
 
     @Query("SELECT p FROM Politician p WHERE p.isActive = true ORDER BY p.name")
     List<Politician> findAllActiveOrderByName();
+
+    @Query("SELECT p FROM Politician p WHERE p.isActive = true ORDER BY p.name")
+    Page<Politician> findAllActiveOrderByName(Pageable pageable);
 
     boolean existsByNameAndIsActiveTrue(String name);
 

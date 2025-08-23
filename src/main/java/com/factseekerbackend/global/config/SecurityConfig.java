@@ -68,41 +68,35 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-            .httpBasic(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable)
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authenticationProvider(authenticationProvider())
-            .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(
-                            "/swagger-ui/**",
-                            "/swagger-ui.html",
-                            "/v3/api-docs/**",
-                            "/api-docs/**",
-                            "/api-docs",
-                            "/v3/api-docs",
-                            "/actuator/**",
-                            "/",
-                            "/favicon.ico"
-                    ).permitAll()
-
-                    .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**", "/api/check/**").permitAll()
-                    .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll()
-
-                    .anyRequest().authenticated()
-            )
-            .oauth2Login(oauth2 -> oauth2
-                    .authorizationEndpoint(authorization -> authorization
-                            .baseUri("/oauth2/authorization")
-                            .authorizationRequestRepository(oAuth2AuthorizationRequestRepository))
-                    .redirectionEndpoint(redirection -> redirection.baseUri("/oauth2/callback/*"))
-                    .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-                    .successHandler(oAuth2AuthenticationSuccessHandler)
-                    .failureHandler(oAuth2AuthenticationFailureHandler)
-            )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, jwtService), UsernamePasswordAuthenticationFilter.class);
+        .httpBasic(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .csrf(AbstractHttpConfigurer::disable)
+        .sessionManagement(
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(
+            HttpStatus.UNAUTHORIZED)))
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .authenticationProvider(authenticationProvider())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**", "/api/check/**")
+            .permitAll()
+            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll()
+            .requestMatchers("/api/trends/**", "/api/analysis/**", "/api/youtube/**","/api/news/**").permitAll()
+            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
+                "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
+            .anyRequest().authenticated())
+        .oauth2Login(oauth2 -> oauth2
+            .authorizationEndpoint(authorization -> authorization
+                .baseUri("/oauth2/authorization")
+                .authorizationRequestRepository(oAuth2AuthorizationRequestRepository))
+            .redirectionEndpoint(redirection -> redirection
+                .baseUri("/oauth2/callback/*"))
+            .userInfoEndpoint(userInfo -> userInfo
+                .userService(customOAuth2UserService))
+            .successHandler(oAuth2AuthenticationSuccessHandler)
+            .failureHandler(oAuth2AuthenticationFailureHandler))
+        .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, jwtService),
+            UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
@@ -111,7 +105,8 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(
-        Arrays.asList(clientUrl, "http://localhost:3000")); // React 개발 서버
+        Arrays.asList(clientUrl, "http://localhost:3000", "https://fact-seeker.com",
+            "https://prod.fact-seeker.com")); // React 개발 서버 + Swagger
     configuration.setAllowedMethods(
         Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("*"));
