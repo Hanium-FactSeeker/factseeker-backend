@@ -80,7 +80,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**", "/oauth2/**", "/api/social/**", "/api/check/**")
             .permitAll()
-            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**").permitAll()
+            .requestMatchers("/api/test/**", "/api/youtube/**", "/api/politicians/**", "/api/latest-trends").permitAll()
             .requestMatchers("/api/trends/**", "/api/analysis/**", "/api/youtube/**","/api/news/**").permitAll()
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/api-docs/**",
                 "/v3/api-docs/**", "/api-docs", "/v3/api-docs").permitAll() // Swagger/OpenAPI
