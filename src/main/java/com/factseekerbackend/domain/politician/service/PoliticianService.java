@@ -1,20 +1,19 @@
 package com.factseekerbackend.domain.politician.service;
 
+import com.factseekerbackend.domain.politician.dto.SortType;
 import com.factseekerbackend.domain.politician.dto.response.PoliticianResponse;
 import com.factseekerbackend.domain.politician.dto.response.PoliticianWithScore;
-import com.factseekerbackend.domain.politician.dto.SortType;
 import com.factseekerbackend.domain.politician.entity.Politician;
 import com.factseekerbackend.domain.politician.entity.PoliticianTrustScore;
 import com.factseekerbackend.domain.politician.repository.PoliticianRepository;
 import com.factseekerbackend.domain.politician.repository.PoliticianTrustScoreRepository;
-import com.factseekerbackend.domain.politician.dto.response.TrustScoreResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -77,8 +76,8 @@ public class PoliticianService {
 
   // 전체 정치인 페이지네이션 조회
   public Page<PoliticianResponse> getAllPoliticiansPaged(int page, int size) {
-    Pageable pageable = PageRequest.of(page, size);
-    return repository.findAllActiveOrderByName(pageable)
+    Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
+    return repository.findAll(pageable)
         .map(PoliticianResponse::from);
   }
 

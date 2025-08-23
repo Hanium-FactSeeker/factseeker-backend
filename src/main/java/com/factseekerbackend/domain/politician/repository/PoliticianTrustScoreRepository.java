@@ -1,6 +1,5 @@
 package com.factseekerbackend.domain.politician.repository;
 
-import com.factseekerbackend.domain.politician.entity.AnalysisStatus;
 import com.factseekerbackend.domain.politician.entity.PoliticianTrustScore;
 import java.time.LocalDate;
 import java.util.List;
@@ -15,13 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PoliticianTrustScoreRepository extends JpaRepository<PoliticianTrustScore, Long> {
 
-  List<PoliticianTrustScore> findByPoliticianIdOrderByAnalysisDateDesc(Long politicianId);
-
   Optional<PoliticianTrustScore> findByPoliticianIdAndAnalysisDate(Long politicianId, LocalDate analysisDate);
-
-  List<PoliticianTrustScore> findByAnalysisDateOrderByOverallScoreDesc(LocalDate analysisDate);
-
-  List<PoliticianTrustScore> findByAnalysisStatus(AnalysisStatus status);
 
   @Query("SELECT pts FROM PoliticianTrustScore pts WHERE pts.analysisDate = :analysisDate AND pts.analysisStatus = 'COMPLETED' ORDER BY pts.overallScore DESC")
   List<PoliticianTrustScore> findCompletedScoresByDate(@Param("analysisDate") LocalDate analysisDate);
