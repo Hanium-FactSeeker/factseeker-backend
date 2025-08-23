@@ -2,12 +2,10 @@ package com.factseekerbackend.domain.politician.dto.response;
 
 import com.factseekerbackend.domain.politician.entity.Politician;
 
-import java.math.BigDecimal;
-
 public record PoliticianResponse(
         Long id,
         String name,
-        String birthDate, // 문자열로 내려주면 프론트가 다루기 편함
+        String birthDate,
         String party,
         String facebookUrl,
         String instagramUrl,

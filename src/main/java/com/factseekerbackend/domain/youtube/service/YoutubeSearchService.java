@@ -3,9 +3,9 @@ package com.factseekerbackend.domain.youtube.service;
 
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoDto;
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoListResponseDto;
+import com.factseekerbackend.domain.youtube.controller.dto.response.YoutubeSearchResponse;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
-import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class YoutubeSearchService implements YoutubeService {
     private String apiKey;
 
     @Override
-    public List<SearchResult> searchVideos(String query) throws IOException {
+    public List<YoutubeSearchResponse> searchVideos(String query) throws IOException {
         YouTube.Search.List search = youTube.search().list(List.of("id","snippet"));
         search.setKey(apiKey);
         search.setQ(query);
@@ -36,9 +37,12 @@ public class YoutubeSearchService implements YoutubeService {
         search.setMaxResults(10L);
 
         SearchListResponse response = search.execute();
-        return response.getItems();
+        return response.getItems().stream()
+                .map(YoutubeSearchResponse::from)
+                .collect(Collectors.toList());
     }
 
+    @Override
     public VideoListResponseDto getPopularPoliticsTop10Resp(long size) throws IOException {
         List<VideoDto> data = getPopularPoliticsTop10(size);
         return VideoListResponseDto.from(data, OffsetDateTime.now(ZoneId.of("Asia/Seoul")).toString());
@@ -59,7 +63,4 @@ public class YoutubeSearchService implements YoutubeService {
                 .map(VideoDto::from)
                 .toList();
     }
-
-
-
 }

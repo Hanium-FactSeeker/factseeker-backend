@@ -1,123 +1,142 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
+import com.factseekerbackend.domain.analysis.controller.dto.response.FastApiFactCheckResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
 import com.factseekerbackend.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class FactCheckResultService {
 
     private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
     private final VideoAnalysisRepository videoAnalysisRepository;
     private final UserRepository userRepository;
-    private final ObjectMapper om = new ObjectMapper();
+    private final ObjectMapper om;
 
     public void upsertFromFastApiResponse(String json) {
         try {
-            JsonNode root = om.readTree(json);
+            FastApiFactCheckResponse dto = parse(json);
+            if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return;
 
-            String videoId = getText(root, "video_id");
-            if (videoId == null || videoId.isBlank()) return;
+            String claimsAsJson = om.writeValueAsString(dto.claims());
 
-            Integer score = getInt(root, "video_total_confidence_score");
-            String summary = getText(root, "summary");
-            String channelType = getText(root, "channel_type");
-            String reason = getText(root, "channel_type_reason");
-
-            Top10VideoAnalysis top10VideoAnalysis = top10VideoAnalysisRepository.findById(videoId)
-                    .orElseGet(() -> Top10VideoAnalysis.builder().videoId(videoId).build())
+            Top10VideoAnalysis top10VideoAnalysis = top10VideoAnalysisRepository.findById(dto.videoId())
+                    .orElseGet(() -> Top10VideoAnalysis.builder().videoId(dto.videoId()).build())
                     .toBuilder()
-                    .totalConfidenceScore(score)
-                    .summary(summary)
-                    .channelType(channelType)
-                    .channelTypeReason(reason)
-                    .resultJson(json)
+                    .videoUrl(dto.videoUrl())
+                    .totalConfidenceScore(dto.videoTotalConfidenceScore())
+                    .summary(dto.summary())
+                    .channelType(dto.channelType())
+                    .channelTypeReason(dto.channelTypeReason())
+                    .claims(claimsAsJson)
+                    .keywords(dto.keywords())
+                    .threeLineSummary(dto.threeLineSummary())
+                    .createdAt(dto.createdAt())
                     .build();
 
             top10VideoAnalysisRepository.save(top10VideoAnalysis);
-        } catch (Exception ignore) {
-
+        } catch (Exception e) {
+            log.error("Error in upsertFromFastApiResponse: {}", e.getMessage(), e);
         }
     }
 
-    public VideoAnalysis upsertFromFastApiNotLogin(String json) {
+    public VideoAnalysisResponse buildResponseFromFastApiNotLogin(String json) {
+        FastApiFactCheckResponse dto = parse(json);
+        if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return null;
 
-        JsonNode root = null;
-        try {
-            root = om.readTree(json);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        String videoId = getText(root, "video_id");
-            if (videoId == null || videoId.isBlank()) {
-                return null;
-            }
-
-            Integer score = getInt(root, "video_total_confidence_score");
-            String summary = getText(root, "summary");
-            String channelType = getText(root, "channel_type");
-            String reason = getText(root, "channel_type_reason");
-
-            return VideoAnalysis.builder()
-                    .videoId(videoId)
-                    .totalConfidenceScore(score)
-                    .summary(summary)
-                    .channelType(channelType)
-                    .channelTypeReason(reason)
-                    .resultJson(json)
-                    .build();
-
-
+        return VideoAnalysisResponse.builder()
+                .videoId(dto.videoId())
+                .videoUrl(dto.videoUrl())
+                .totalConfidenceScore(dto.videoTotalConfidenceScore())
+                .summary(dto.summary())
+                .channelType(dto.channelType())
+                .channelTypeReason(dto.channelTypeReason())
+                .claims(dto.claims()) // Pass the list of ClaimDto directly
+                .keywords(dto.keywords())
+                .threeLineSummary(dto.threeLineSummary())
+                .createdAt(dto.createdAt())
+                .status(VideoAnalysisStatus.COMPLETED)
+                .build();
     }
 
     public void upsertFromFastApiResponseToUser(String json, Long userId) {
         try {
-            JsonNode root = om.readTree(json);
+            FastApiFactCheckResponse dto = parse(json);
+            if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return;
 
-            String videoId = getText(root, "video_id");
-            if (videoId == null || videoId.isBlank()) return;
-
-            Integer score = getInt(root, "video_total_confidence_score");
-            String summary = getText(root, "summary");
-            String channelType = getText(root, "channel_type");
-            String reason = getText(root, "channel_type_reason");
+            String claimsAsJson = om.writeValueAsString(dto.claims());
 
             VideoAnalysis videoAnalysis = VideoAnalysis.builder()
-                    .videoId(videoId)
-                    .totalConfidenceScore(score)
-                    .summary(summary)
-                    .channelType(channelType)
-                    .channelTypeReason(reason)
-                    .resultJson(json)
-                    .user(
-                            userRepository.getReferenceById(userId)
-                    )
+                    .videoId(dto.videoId())
+                    .videoUrl(dto.videoUrl())
+                    .totalConfidenceScore(dto.videoTotalConfidenceScore())
+                    .summary(dto.summary())
+                    .channelType(dto.channelType())
+                    .channelTypeReason(dto.channelTypeReason())
+                    .claims(claimsAsJson)
+                    .keywords(dto.keywords())
+                    .threeLineSummary(dto.threeLineSummary())
+                    .user(userRepository.getReferenceById(userId))
+                    .createdAt(dto.createdAt())
+                    .status(VideoAnalysisStatus.COMPLETED)
                     .build();
 
             videoAnalysisRepository.save(videoAnalysis);
-        } catch (Exception ignore) {
-
+        } catch (Exception e) {
+            log.error("Error in upsertFromFastApiResponseToUser: {}", e.getMessage(), e);
         }
     }
 
+    /**
+     * 기존 VideoAnalysis 레코드(ID 기반)를 FastAPI 응답 내용으로 업데이트한다.
+     */
+    public void updateExistingFromFastApiResponseToUser(String json, Long videoAnalysisId) {
+        try {
+            FastApiFactCheckResponse dto = parse(json);
+            if (dto == null || dto.videoId() == null || dto.videoId().isBlank()) return;
 
+            String claimsAsJson = om.writeValueAsString(dto.claims());
 
+            videoAnalysisRepository.findById(videoAnalysisId).ifPresent(existing -> {
+                VideoAnalysis updated = existing.toBuilder()
+                        .videoId(dto.videoId())
+                        .videoUrl(dto.videoUrl())
+                        .totalConfidenceScore(dto.videoTotalConfidenceScore())
+                        .summary(dto.summary())
+                        .channelType(dto.channelType())
+                        .channelTypeReason(dto.channelTypeReason())
+                        .claims(claimsAsJson)
+                        .keywords(dto.keywords())
+                        .threeLineSummary(dto.threeLineSummary())
+                        .createdAt(dto.createdAt())
+                        .status(VideoAnalysisStatus.COMPLETED)
+                        .build();
+                videoAnalysisRepository.save(updated);
+            });
+        } catch (Exception e) {
+            log.error("Error in updateExistingFromFastApiResponseToUser: {}", e.getMessage(), e);
+        }
+    }
 
-
-
-
-    private String getText(JsonNode n, String f) { return n.has(f) && !n.get(f).isNull() ? n.get(f).asText() : null; }
-    private Integer getInt(JsonNode n, String f) { return n.has(f) && n.get(f).canConvertToInt() ? n.get(f).asInt() : null; }
+    private FastApiFactCheckResponse parse(String json) {
+        try {
+            return om.readValue(json, FastApiFactCheckResponse.class);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse FastAPI response: {}", e.getMessage());
+            return null;
+        }
+    }
 }
