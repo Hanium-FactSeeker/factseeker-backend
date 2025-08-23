@@ -11,11 +11,12 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 
 @OpenAPIDefinition(
     info = @io.swagger.v3.oas.annotations.info.Info(
-        title = "Fact-Seeker API Documentation", 
+        title = "Fact-Seeker API Documentation",
         description = "팩트시커 서비스의 API 명세서입니다.",
         version = "v1.0.0"
     ),
     servers = {
+        @Server(url = "https://prod.fact-seeker.com", description = "배포 서버"),
         @Server(url = "http://localhost:8080", description = "로컬 개발 서버")
     })
 @Configuration
