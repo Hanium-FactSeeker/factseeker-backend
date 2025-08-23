@@ -10,6 +10,7 @@ import com.factseekerbackend.domain.politician.service.llm.LLMAnalysisService;
 import com.factseekerbackend.domain.politician.service.llm.LLMServiceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
@@ -39,6 +40,7 @@ public class PoliticianTrustAnalysisService {
     /**
      * 모든 정치인에 대한 신뢰도를 분석을 수행합니다.
      */
+    @Async
     public void analyzeAllPoliticians() {
         log.info("[BATCH] 정치인 신뢰도 분석 배치 시작");
         
@@ -98,7 +100,7 @@ public class PoliticianTrustAnalysisService {
         }
 
         try {
-            // 3개 LLM 동시 분석 실행
+            // 2개 LLM 동시 분석 실행
             List<CompletableFuture<LLMAnalysisResult>> futures = List.of(
                     CompletableFuture.supplyAsync(() -> gptAnalysisService.analyzeTrustScore(politician, analysisPeriod), executorService),
                     CompletableFuture.supplyAsync(() -> geminiAnalysisService.analyzeTrustScore(politician, analysisPeriod), executorService)
