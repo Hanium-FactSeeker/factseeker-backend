@@ -19,6 +19,8 @@ logs/
 *.log
 
 # Environment files
+.env.local
+.env.dev
 .env
 
 # Git
