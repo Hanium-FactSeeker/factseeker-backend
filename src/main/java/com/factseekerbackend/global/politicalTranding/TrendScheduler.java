@@ -15,13 +15,18 @@ public class TrendScheduler {
 
   @Value("${fastapi.trends-url}")
   private String trendsUrl;
-  private final WebClient webClient;
+
+  private WebClient webClient;
   private final TrendService trendService;
 
   public TrendScheduler(TrendService trendService) {
     this.trendService = trendService;
+  }
+
+  @PostConstruct
+  public void init() {
     this.webClient = WebClient.builder()
-        .baseUrl(trendsUrl) // 파이썬 API 서버 주소
+        .baseUrl(trendsUrl)
         .build();
   }
 
@@ -30,11 +35,10 @@ public class TrendScheduler {
     log.info("Fetching trends from Python API...");
 
     webClient.get()
-        .uri("/api/trends") // 파이썬 API 엔드포인트
+        .uri("/api/trends")
         .retrieve()
         .bodyToMono(TrendApiResponse.class)
         .doOnError(error -> log.error("Failed to fetch trends from Python API: {}", error.getMessage()))
         .subscribe(response -> trendService.updateTrends(response.getTrends()));
   }
-
 }

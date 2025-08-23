@@ -57,6 +57,9 @@ spring:
 app:
   mail:
     from: ${spring.mail.username}
+  redis:
+    cache:
+      database: ${APP_REDIS_CACHE_DATABASE:1}
 
 oauth2:
   authorized-redirect-uris: ${OAUTH2_AUTHORIZED_REDIRECT_URIS:http://localhost:3000}

@@ -1,6 +1,5 @@
 # Gradle
 .gradle/
-build/
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
 
@@ -22,14 +21,14 @@ logs/
 # Environment files
 .env.local
 .env.dev
+.env
 
 # Git
 .git/
 .gitignore
 
 # Docker
-Dockerfile
-infra/deploy/docker-compose.yml
+docker-compose-dev.yml
 .dockerignore
 
 # Documentation

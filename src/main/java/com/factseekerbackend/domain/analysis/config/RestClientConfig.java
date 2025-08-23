@@ -20,8 +20,6 @@ public class RestClientConfig {
     public RestClient fastApiClient(
             @Value("${fastapi.base-url}") String baseUrl
     ) {
-        String finalBaseUrl = baseUrl.startsWith("http") ? baseUrl : "http://" + baseUrl;
-
         // JDK HttpClient 기반 타임아웃
         HttpClient httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -32,7 +30,7 @@ public class RestClientConfig {
         rf.setReadTimeout(Duration.ofSeconds(360));
 
         return RestClient.builder()
-                .baseUrl(finalBaseUrl)
+                .baseUrl(baseUrl)
                 .requestFactory(rf)
                 .build();
     }
