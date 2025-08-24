@@ -7,7 +7,9 @@ import com.factseekerbackend.domain.politician.entity.Politician;
 import com.factseekerbackend.domain.politician.entity.PoliticianTrustScore;
 import com.factseekerbackend.domain.politician.repository.PoliticianRepository;
 import com.factseekerbackend.domain.politician.repository.PoliticianTrustScoreRepository;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,14 +35,20 @@ public class PoliticianService {
   }
 
   // 이름으로 한 명 (정확 일치 우선 -> 부분 일치)
-  public PoliticianResponse getByName(String name) {
+  public List<PoliticianResponse> searchByName(String name) {
     String q = name == null ? "" : name.trim();
-    if (q.isEmpty()) throw new IllegalArgumentException("Name is empty");
+    if (q.isEmpty()) {
+      // 검색어가 없으면 빈 리스트 반환
+      return Collections.emptyList();
+    }
 
-    Politician p = repository.findFirstByNameOrderByIdAsc(q)
-        .or(() -> repository.findFirstByNameContainingIgnoreCase(q))
-        .orElseThrow(() -> new IllegalArgumentException("Politician not found by name: " + name));
-    return PoliticianResponse.from(p);
+    // [변경] 부분 일치하는 모든 Politician 엔티티를 조회
+    List<Politician> politicians = repository.findByNameContainingIgnoreCase(q);
+
+    // 조회된 엔티티 리스트를 DTO(PoliticianResponse) 리스트로 변환하여 반환
+    return politicians.stream()
+        .map(PoliticianResponse::from)
+        .collect(Collectors.toList());
   }
 
   // 상위 12명 이름과 점수 (overallScore 기준)
