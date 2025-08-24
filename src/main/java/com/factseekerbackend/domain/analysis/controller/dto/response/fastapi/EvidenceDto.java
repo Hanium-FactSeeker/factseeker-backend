@@ -1,4 +1,4 @@
-package com.factseekerbackend.domain.analysis.controller.dto.response;
+package com.factseekerbackend.domain.analysis.controller.dto.response.fastapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

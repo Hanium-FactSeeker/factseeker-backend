@@ -1,7 +1,9 @@
 package com.factseekerbackend.domain.analysis.controller;
 
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequest;
+import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.*;
+import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
@@ -194,15 +196,22 @@ public class VideoAnalysisController {
         }
     }
 
-    @GetMapping("/top10/{videoId}/percent")
-    public ResponseEntity<ApiResponse<AnalysisPercentResponse>> getVideoPercent(
+    @GetMapping("/top10/{videoId}/percents")
+    public ResponseEntity<ApiResponse<Top10AnalysisPercentResponse>> getVideoPercent(
             @PathVariable("videoId") String videoId
     ) {
         Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND));
 
-        AnalysisPercentResponse response = AnalysisPercentResponse.from(analysis);
+        Top10AnalysisPercentResponse response = Top10AnalysisPercentResponse.from(analysis);
 
         return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", response));
+    }
+
+    @GetMapping("/top10/percents")
+    public ResponseEntity<ApiResponse<List<Top10AnalysisPercentResponse>>> getVideosPercent(
+            @RequestBody VideoIdsRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", videoAnalysisService.getTop10VideosPercent(request)));
     }
 }

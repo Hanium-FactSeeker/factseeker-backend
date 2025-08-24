@@ -1,7 +1,9 @@
 package com.factseekerbackend.domain.analysis.service;
 
-import com.factseekerbackend.domain.analysis.controller.dto.response.ClaimDto;
+import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
+import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
 import com.factseekerbackend.domain.analysis.controller.dto.response.KeywordsResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.Top10AnalysisPercentResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
@@ -12,6 +14,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +46,8 @@ public class VideoAnalysisService {
             return Collections.emptyList();
         }
         try {
-            return om.readValue(claimsJson, new TypeReference<List<ClaimDto>>() {});
+            return om.readValue(claimsJson, new TypeReference<List<ClaimDto>>() {
+            });
         } catch (JsonProcessingException e) {
             log.error("Failed to parse claims JSON: {}", claimsJson, e);
             // 파싱 실패 시, 원본 문자열을 그대로 반환하거나 비어있는 리스트를 반환할 수 있습니다.
@@ -55,5 +59,16 @@ public class VideoAnalysisService {
     public KeywordsResponse getTop10YoutubeKeywords(String videoId) {
         Optional<Top10VideoAnalysis> top10VideoAnalysis = top10VideoAnalysisRepository.findById(videoId);
         return KeywordsResponse.from(top10VideoAnalysis.orElseThrow());
+    }
+
+    public List<Top10AnalysisPercentResponse> getTop10VideosPercent(VideoIdsRequest request) {
+
+        return request.videoIds().stream()
+                .flatMap(videoId ->
+                        top10VideoAnalysisRepository.findByVideoId(videoId)
+                                .stream()
+                                .map(Top10AnalysisPercentResponse::from)
+                )
+                .toList();
     }
 }

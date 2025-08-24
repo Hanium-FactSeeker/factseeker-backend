@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
-import com.factseekerbackend.domain.analysis.controller.dto.response.FastApiFactCheckResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.FastApiFactCheckResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
