@@ -3,12 +3,15 @@ package com.factseekerbackend.domain.politician.service;
 import com.factseekerbackend.domain.politician.dto.SortType;
 import com.factseekerbackend.domain.politician.dto.response.PoliticianResponse;
 import com.factseekerbackend.domain.politician.dto.response.PoliticianWithScore;
+import com.factseekerbackend.domain.politician.dto.response.TrustScoreResponse;
 import com.factseekerbackend.domain.politician.entity.Politician;
 import com.factseekerbackend.domain.politician.entity.PoliticianTrustScore;
 import com.factseekerbackend.domain.politician.repository.PoliticianRepository;
 import com.factseekerbackend.domain.politician.repository.PoliticianTrustScoreRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -67,21 +70,6 @@ public class PoliticianService {
         .toList();
   }
 
-  // 페이지네이션된 정치인 점수 조회 (3명씩)
-  public Page<PoliticianWithScore> getTopPoliticiansWithScores(int page, int size) {
-    Pageable pageable = PageRequest.of(page, size);
-    Page<PoliticianTrustScore> topScores = trustScoreRepository
-        .findTop12ByOverallScoreOrderByDateDesc(pageable);
-
-    return topScores.map(score -> new PoliticianWithScore(
-        score.getPolitician().getName(),
-        score.getPolitician().getParty(),
-        score.getGeminiScore(),
-        score.getGptScore(),
-        score.getOverallScore()
-    ));
-  }
-
   // 전체 정치인 페이지네이션 조회
   public Page<PoliticianResponse> getAllPoliticiansPaged(int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
@@ -109,6 +97,28 @@ public class PoliticianService {
 
     // PoliticianTrustScore를 PoliticianWithScore로 수동으로 변환합니다.
     return trustScores.map(PoliticianWithScore::from);
+  }
+
+  public TrustScoreResponse getLatestScoreByPoliticianId(Long politicianId) {
+    PoliticianTrustScore latestScore = trustScoreRepository.findLatestCompletedScore(politicianId)
+        .orElseThrow(() -> new EntityNotFoundException("ID " + politicianId + "에 대한 신뢰도 분석 결과를 찾을 수 없습니다."));
+    return TrustScoreResponse.from(latestScore);
+  }
+
+  public List<TrustScoreResponse> getLatestScoresByName(String name) {
+    String q = name == null ? "" : name.trim();
+    if (q.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    List<Politician> politicians = repository.findByNameContainingIgnoreCase(q);
+
+    return politicians.stream()
+        .map(politician -> trustScoreRepository.findLatestCompletedScore(politician.getId()))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(TrustScoreResponse::from)
+        .collect(Collectors.toList());
   }
 
 }

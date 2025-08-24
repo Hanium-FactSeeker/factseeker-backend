@@ -16,16 +16,11 @@ public interface PoliticianTrustScoreRepository extends JpaRepository<Politician
 
   Optional<PoliticianTrustScore> findByPoliticianIdAndAnalysisDate(Long politicianId, LocalDate analysisDate);
 
-  @Query("SELECT pts FROM PoliticianTrustScore pts WHERE pts.analysisDate = :analysisDate AND pts.analysisStatus = 'COMPLETED' ORDER BY pts.overallScore DESC")
-  List<PoliticianTrustScore> findCompletedScoresByDate(@Param("analysisDate") LocalDate analysisDate);
-
   @Query("SELECT pts FROM PoliticianTrustScore pts WHERE pts.politician.id = :politicianId AND pts.analysisStatus = 'COMPLETED' ORDER BY pts.analysisDate DESC LIMIT 1")
   Optional<PoliticianTrustScore> findLatestCompletedScore(@Param("politicianId") Long politicianId);
 
   @Query("SELECT pts FROM PoliticianTrustScore pts WHERE pts.retryCount < 3 AND pts.analysisStatus = 'FAILED'")
   List<PoliticianTrustScore> findFailedScoresForRetry();
-
-  boolean existsByPoliticianIdAndAnalysisDate(Long politicianId, LocalDate analysisDate);
 
   // 상위 12명을 overallScore 기준으로 조회 (최신 분석 결과)
   @Query("SELECT pts FROM PoliticianTrustScore pts " +
