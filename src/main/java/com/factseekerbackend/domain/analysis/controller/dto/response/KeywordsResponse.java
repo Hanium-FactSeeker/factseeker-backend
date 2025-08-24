@@ -1,11 +1,15 @@
 package com.factseekerbackend.domain.analysis.controller.dto.response;
 
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Arrays;
 import java.util.List;
 
-public record KeywordsResponse(List<String> keywords) {
+public record KeywordsResponse(
+        @Schema(description = "키워드 배열", example = "[\"정책\", \"경제\", \"토론\"]")
+        List<String> keywords
+) {
     public static KeywordsResponse from(Top10VideoAnalysis top10VideoAnalysis) {
         List<String> list = Arrays.stream(top10VideoAnalysis.getKeywords().trim().split(","))
                 .map(String::trim)

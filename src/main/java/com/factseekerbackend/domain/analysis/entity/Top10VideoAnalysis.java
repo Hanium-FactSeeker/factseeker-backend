@@ -3,6 +3,8 @@ package com.factseekerbackend.domain.analysis.entity;
 import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import lombok.*;
@@ -18,6 +20,10 @@ public class Top10VideoAnalysis {
     @Id
     @Column(name = "video_id", length = 32, nullable = false)
     private String videoId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    private VideoAnalysisStatus status;
 
     @Column(name = "video_url", length = 255)
     private String videoUrl;

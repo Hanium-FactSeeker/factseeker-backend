@@ -66,6 +66,12 @@ public class FactCheckTriggerService {
             } catch (Exception e) {
                 log.warn("FastAPI 처리 실패 videoId={} (attempt {}/{}): {}",
                         videoId, attempt, maxAttempts, e.toString());
+                
+                if (attempt == maxAttempts) {
+                    log.error("최종 실패: FastAPI 처리 실패 videoId={}. FAILED 상태로 저장합니다.", videoId);
+                    resultService.saveFailedTop10Analysis(videoId);
+                }
+
                 try {
                     Thread.sleep(backoffMs);
                 } catch (InterruptedException ignored) {
