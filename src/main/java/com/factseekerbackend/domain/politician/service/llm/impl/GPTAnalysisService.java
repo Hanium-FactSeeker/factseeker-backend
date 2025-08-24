@@ -111,8 +111,6 @@ public class GPTAnalysisService implements LLMAnalysisService {
             분석 대상 정보:
             - 이름: %s
             - 소속 정당: %s
-            - 직책: %s
-            - 지역: %s
             - 분석 기간: %s
             
             다음 4개 항목에 대해 0-100점으로 평가하고, 각각의 평가 근거를 구체적으로 설명해주세요:

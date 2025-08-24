@@ -38,6 +38,7 @@ public class PoliticianTrustAnalysisService {
     /**
      * 모든 정치인에 대한 신뢰도를 분석을 수행합니다.
      */
+    @Async
     public void analyzeAllPoliticians() {
         log.info("[BATCH] 정치인 신뢰도 분석 배치 시작");
         
@@ -97,7 +98,7 @@ public class PoliticianTrustAnalysisService {
         }
 
         try {
-            // 3개 LLM 동시 분석 실행
+            // 2개 LLM 동시 분석 실행
             List<CompletableFuture<LLMAnalysisResult>> futures = List.of(
                     CompletableFuture.supplyAsync(() -> gptAnalysisService.analyzeTrustScore(politician, analysisPeriod), executorService),
                     CompletableFuture.supplyAsync(() -> geminiAnalysisService.analyzeTrustScore(politician, analysisPeriod), executorService)
