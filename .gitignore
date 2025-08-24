@@ -45,4 +45,4 @@ out/
 .env.local
 .env.dev
 .env
-.yaml
+*.yaml
