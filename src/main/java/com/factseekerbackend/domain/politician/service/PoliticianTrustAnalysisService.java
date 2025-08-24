@@ -8,21 +8,19 @@ import com.factseekerbackend.domain.politician.repository.PoliticianRepository;
 import com.factseekerbackend.domain.politician.repository.PoliticianTrustScoreRepository;
 import com.factseekerbackend.domain.politician.service.llm.LLMAnalysisService;
 import com.factseekerbackend.domain.politician.service.llm.LLMServiceType;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Propagation;
-
+import com.factseekerbackend.domain.politician.service.llm.impl.GPTAnalysisService;
+import com.factseekerbackend.domain.politician.service.llm.impl.GeminiAnalysisService;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.ArrayList;
-import com.factseekerbackend.domain.politician.service.llm.impl.GPTAnalysisService;
-import com.factseekerbackend.domain.politician.service.llm.impl.GeminiAnalysisService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -366,14 +364,10 @@ public class PoliticianTrustAnalysisService {
         log.info("[RETRY] 실패한 분석 재시도 완료");
     }
 
-    /**
-     * 정치인의 최신 점수를 조회합니다.
-     */
     private Integer getLatestScore(Long politicianId) {
         return trustScoreRepository.findLatestCompletedScore(politicianId)
                 .map(PoliticianTrustScore::getOverallScore)
                 .orElse(null);
     }
-
 
 }
