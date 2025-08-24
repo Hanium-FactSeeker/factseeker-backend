@@ -1,15 +1,15 @@
 package com.factseekerbackend.domain.analysis.controller;
 
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequest;
-import com.factseekerbackend.domain.analysis.controller.dto.response.ClaimDto;
-import com.factseekerbackend.domain.analysis.controller.dto.response.KeywordsResponse;
-import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
-import com.factseekerbackend.domain.analysis.controller.dto.response.AnalysisStartResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.*;
+import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
 import com.factseekerbackend.domain.analysis.service.fastapi.FactCheckTriggerService;
 import com.factseekerbackend.domain.user.entity.CustomUserDetails;
 import com.factseekerbackend.global.common.ApiResponse;
+import com.factseekerbackend.global.exception.BusinessException;
+import com.factseekerbackend.global.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,25 +47,25 @@ public class VideoAnalysisController {
     private final ObjectMapper om;
 
     @Operation(
-        summary = "비디오 분석 결과 조회",
-        description = "특정 비디오 분석 ID에 대한 분석 결과를 조회합니다."
+            summary = "비디오 분석 결과 조회",
+            description = "특정 비디오 분석 ID에 대한 분석 결과를 조회합니다."
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "분석 결과 조회 성공",
-            content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "분석 결과를 찾을 수 없음",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "401",
-            description = "인증되지 않은 요청",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "분석 결과 조회 성공",
+                    content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "분석 결과를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 요청",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
     })
     @GetMapping("/{videoAnalysisId}")
     public ResponseEntity<ApiResponse<VideoAnalysisResponse>> getVideoAnalysis(
@@ -83,20 +83,20 @@ public class VideoAnalysisController {
     }
 
     @Operation(
-        summary = "비디오 분석 요청",
-        description = "유튜브 URL을 입력받아 비디오 분석을 요청합니다. 로그인 여부에 따라 다른 처리를 수행합니다."
+            summary = "비디오 분석 요청",
+            description = "유튜브 URL을 입력받아 비디오 분석을 요청합니다. 로그인 여부에 따라 다른 처리를 수행합니다."
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "분석 요청 성공",
-            content = @Content(schema = @Schema(oneOf = {String.class, VideoAnalysisResponse.class}))
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "잘못된 요청",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "분석 요청 성공",
+                    content = @Content(schema = @Schema(oneOf = {String.class, VideoAnalysisResponse.class}))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
     })
     @PostMapping
     public CompletableFuture<ResponseEntity<ApiResponse<?>>> saveVideoAnalysis(
@@ -111,42 +111,42 @@ public class VideoAnalysisController {
                 log.info("[API] 로그인 사용자 분석 요청 - User ID: {}", userId);
                 Long analysisId = factCheckTriggerService.triggerAndReturnId(youtubeUrl, userId);
                 return CompletableFuture.completedFuture(
-                    ResponseEntity.ok(
-                        ApiResponse.success(
-                            "비디오 분석이 성공적으로 요청되었습니다.",
-                            new AnalysisStartResponse(analysisId, VideoAnalysisStatus.PENDING)
+                        ResponseEntity.ok(
+                                ApiResponse.success(
+                                        "비디오 분석이 성공적으로 요청되었습니다.",
+                                        new AnalysisStartResponse(analysisId, VideoAnalysisStatus.PENDING)
+                                )
                         )
-                    )
                 );
             } else {
                 log.info("[API] 비로그인 사용자 분석 요청");
                 return factCheckTriggerService.triggerSingleToRdsToNotLogin(youtubeUrl)
-                    .thenApply(result -> ResponseEntity.ok(ApiResponse.success("비디오 분석 결과", result)));
+                        .thenApply(result -> ResponseEntity.ok(ApiResponse.success("비디오 분석 결과", result)));
             }
         } catch (Exception e) {
             log.error("[API] 비디오 분석 요청 실패: {}", e.getMessage());
             return CompletableFuture.completedFuture(
-                ResponseEntity.ok(ApiResponse.error("비디오 분석 요청에 실패했습니다: " + e.getMessage()))
+                    ResponseEntity.ok(ApiResponse.error("비디오 분석 요청에 실패했습니다: " + e.getMessage()))
             );
         }
     }
-  
-  
-        @Operation(
-        summary = "Top 10 비디오 분석 결과 조회",
-        description = "특정 Top 10 비디오 ID에 대한 분석 결과를 조회합니다."
+
+
+    @Operation(
+            summary = "Top 10 비디오 분석 결과 조회",
+            description = "특정 Top 10 비디오 ID에 대한 분석 결과를 조회합니다."
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "분석 결과 조회 성공",
-            content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "202",
-            description = "분석 진행 중",
-            content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "분석 결과 조회 성공",
+                    content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "202",
+                    description = "분석 진행 중",
+                    content = @Content(schema = @Schema(implementation = VideoAnalysisResponse.class))
+            )
     })
     @GetMapping("/top10/{videoId}")
     public ResponseEntity<VideoAnalysisResponse> getTop10VideoAnalysis(
@@ -163,22 +163,22 @@ public class VideoAnalysisController {
                         .build()));
     }
 
-        @Operation(
-        summary = "Top 10 유튜브 키워드 조회",
-        description = "특정 Top 10 비디오 ID에 대한 키워드를 조회합니다."
+    @Operation(
+            summary = "Top 10 유튜브 키워드 조회",
+            description = "특정 Top 10 비디오 ID에 대한 키워드를 조회합니다."
     )
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "키워드 조회 성공",
-            content = @Content(schema = @Schema(implementation = KeywordsResponse.class))
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "키워드 조회 성공",
+                    content = @Content(schema = @Schema(implementation = KeywordsResponse.class))
+            )
     })
-    @GetMapping("top10/{videoId}/keywords")
+    @GetMapping("/top10/{videoId}/keywords")
     public ResponseEntity<ApiResponse<KeywordsResponse>> getTop10YoutubeKeywords(
             @Parameter(description = "비디오 ID", example = "exampleVideoId")
             @PathVariable String videoId) {
-        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.",videoAnalysisService.getTop10YoutubeKeywords(videoId)));
+        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", videoAnalysisService.getTop10YoutubeKeywords(videoId)));
     }
 
     private Object parseClaims(String claimsJson) {
@@ -186,12 +186,23 @@ public class VideoAnalysisController {
             return Collections.emptyList();
         }
         try {
-            return om.readValue(claimsJson, new TypeReference<List<ClaimDto>>() {});
+            return om.readValue(claimsJson, new TypeReference<List<ClaimDto>>() {
+            });
         } catch (JsonProcessingException e) {
             log.error("Failed to parse claims JSON in controller: {}", claimsJson, e);
             return Collections.emptyList();
         }
     }
 
+    @GetMapping("/top10/{videoId}/percent")
+    public ResponseEntity<ApiResponse<AnalysisPercentResponse>> getVideoPercent(
+            @PathVariable("videoId") String videoId
+    ) {
+        Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND));
 
+        AnalysisPercentResponse response = AnalysisPercentResponse.from(analysis);
+
+        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", response));
+    }
 }
