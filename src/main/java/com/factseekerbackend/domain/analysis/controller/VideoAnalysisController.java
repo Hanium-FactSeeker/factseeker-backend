@@ -26,6 +26,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -83,6 +84,7 @@ public class VideoAnalysisController {
             )
     })
     @GetMapping("/{videoAnalysisId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<VideoAnalysisResponse>> getVideoAnalysis(
             @Parameter(description = "비디오 분석 ID", example = "1")
             @PathVariable("videoAnalysisId") Long videoAnalysisId,
@@ -90,10 +92,25 @@ public class VideoAnalysisController {
         try {
             Long userId = userDetails.getId();
             VideoAnalysisResponse videoAnalysis = videoAnalysisService.getVideoAnalysis(userId, videoAnalysisId);
+            if (videoAnalysis.getStatus() == VideoAnalysisStatus.FAILED) {
+                return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
+                        .body(ApiResponse.error("비디오 분석에 실패했습니다."));
+            }
+            if (videoAnalysis.getStatus() == VideoAnalysisStatus.PENDING) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.ACCEPTED)
+                        .body(ApiResponse.success("분석 진행 중입니다.", videoAnalysis));
+            }
             return ResponseEntity.ok(ApiResponse.success("비디오 분석 결과를 성공적으로 조회했습니다.", videoAnalysis));
+        } catch (BusinessException e) {
+            throw e;
+        } catch (NullPointerException e) {
+            log.warn("[API] 비디오 분석 결과를 찾을 수 없음: {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("분석 결과를 찾을 수 없습니다."));
         } catch (Exception e) {
-            log.error("[API] 비디오 분석 결과 조회 실패: {}", e.getMessage());
-            return ResponseEntity.ok(ApiResponse.error("비디오 분석 결과 조회에 실패했습니다: " + e.getMessage()));
+            log.error("[API] 비디오 분석 결과 조회 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
+                    .body(ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
         }
     }
 
@@ -204,6 +221,11 @@ public class VideoAnalysisController {
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "해당 ID는 Top 10 목록에 없음",
+                    content = @Content
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "202",
                     description = "분석 대기 상태 (PENDING)",
                     content = @Content(
@@ -219,8 +241,12 @@ public class VideoAnalysisController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
-                    description = "서버 내부 오류",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"서버 내부 오류가 발생했습니다.\"\n}"))
+                    description = "분석 실패 (FAILED)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = VideoAnalysisResponse.class),
+                            examples = @ExampleObject(value = "{\n  \\\"videoId\\\": \\\"abc123\\\",\n  \\\"status\\\": \\\"FAILED\\\"\n}")
+                    )
             )
     })
     @GetMapping("/top10/{videoId}")
@@ -229,13 +255,29 @@ public class VideoAnalysisController {
             @PathVariable("videoId") String videoId) {
         return top10VideoAnalysisRepository.findById(videoId)
                 .map(analysis -> {
+                    if (analysis.getStatus() == VideoAnalysisStatus.FAILED) {
+                        return ResponseEntity.status(500)
+                                .body(VideoAnalysisResponse.builder()
+                                        .videoId(analysis.getVideoId())
+                                        .status(VideoAnalysisStatus.FAILED)
+                                        .build());
+                    }
                     Object claims = parseClaims(analysis.getClaims());
                     return ResponseEntity.ok(VideoAnalysisResponse.from(analysis, claims));
                 })
-                .orElseGet(() -> ResponseEntity.accepted().body(VideoAnalysisResponse.builder()
-                        .videoId(videoId)
-                        .status(VideoAnalysisStatus.PENDING)
-                        .build()));
+                .orElseGet(() -> {
+                    // DB에 없을 때 Redis Top10에도 없으면 404
+                    if (!videoAnalysisService.isInTop10(videoId)) {
+                        return ResponseEntity.notFound().build();
+                    }
+                    // Top10에 있으면 PENDING(202)
+                    return ResponseEntity.accepted().body(
+                            VideoAnalysisResponse.builder()
+                                    .videoId(videoId)
+                                    .status(VideoAnalysisStatus.PENDING)
+                                    .build()
+                    );
+                });
     }
 
     @Operation(

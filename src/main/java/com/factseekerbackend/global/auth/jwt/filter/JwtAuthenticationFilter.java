@@ -2,7 +2,10 @@ package com.factseekerbackend.global.auth.jwt.filter;
 
 import com.factseekerbackend.global.auth.jwt.JwtTokenProvider;
 import com.factseekerbackend.global.auth.jwt.service.JwtService;
+import com.factseekerbackend.global.exception.BusinessException;
 import com.factseekerbackend.global.exception.InvalidTokenException;
+import com.factseekerbackend.global.exception.ErrorCode;
+import org.springframework.security.core.AuthenticationException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,18 +53,51 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           SecurityContextHolder.getContext().setAuthentication(authentication);
           log.debug("인증 정보 설정 완료: {}", authentication.getName());
         } else {
-          log.debug("유효하지 않은 액세스 토큰입니다.");
+          log.warn("유효하지 않은 액세스 토큰입니다.");
+          SecurityContextHolder.clearContext();
+          response.setStatus(ErrorCode.INVALID_CREDENTIALS.getStatus().value());
+          response.setContentType("application/json;charset=UTF-8");
+          response.setCharacterEncoding("UTF-8");
+          if (!response.isCommitted()) {
+            response.getWriter().write("{\"success\":false,\"message\":\"" + ErrorCode.INVALID_CREDENTIALS.getMessage() + "\"}");
+            response.getWriter().flush();
+          }
+          return;
         }
       }
+    } catch (BusinessException e) {
+      log.warn("JWT 인증 실패: {}", e.getMessage());
+      org.springframework.security.core.context.SecurityContextHolder.clearContext();
+      response.setStatus(e.getErrorCode().getStatus().value());
+      response.setContentType("application/json;charset=UTF-8");
+      response.setCharacterEncoding("UTF-8");
+      String message = e.getErrorCode() != null ? e.getErrorCode().getMessage() : ErrorCode.INVALID_CREDENTIALS.getMessage();
+      if (!response.isCommitted()) {
+        response.getWriter().write("{\"success\":false,\"message\":\"" + message + "\"}");
+        response.getWriter().flush();
+      }
+      return;
     } catch (InvalidTokenException e) {
       log.warn("JWT 인증 실패: {}", e.getMessage());
-      response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      response.getWriter().write(e.getMessage());
+      org.springframework.security.core.context.SecurityContextHolder.clearContext();
+      response.setStatus(ErrorCode.INVALID_CREDENTIALS.getStatus().value());
+      response.setContentType("application/json;charset=UTF-8");
+      response.setCharacterEncoding("UTF-8");
+      if (!response.isCommitted()) {
+        response.getWriter().write("{\"success\":false,\"message\":\"" + ErrorCode.INVALID_CREDENTIALS.getMessage() + "\"}");
+        response.getWriter().flush();
+      }
       return;
     } catch (Exception e) {
       log.error("JWT 필터 처리 중 예외 발생: {}", e.getMessage(), e);
-      response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      response.getWriter().write("인증 처리 중 서버 오류가 발생했습니다.");
+      org.springframework.security.core.context.SecurityContextHolder.clearContext();
+      response.setStatus(ErrorCode.INTERNAL_SERVER_ERROR.getStatus().value());
+      response.setContentType("application/json;charset=UTF-8");
+      response.setCharacterEncoding("UTF-8");
+      if (!response.isCommitted()) {
+        response.getWriter().write("{\"success\":false,\"message\":\"" + ErrorCode.INTERNAL_SERVER_ERROR.getMessage() + "\"}");
+        response.getWriter().flush();
+      }
       return;
     }
 

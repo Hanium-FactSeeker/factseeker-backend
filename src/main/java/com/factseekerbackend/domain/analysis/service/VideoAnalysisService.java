@@ -59,6 +59,12 @@ public class VideoAnalysisService {
                 .orElseThrow();
     }
 
+    public boolean isInTop10(String videoId) {
+        if (videoId == null || videoId.isBlank()) return false;
+        List<String> ids = fetchTopNVideoIdsPipeline(10);
+        return ids.contains(videoId);
+    }
+
     public PercentStatusData getTop10VideosPercent(VideoIdsRequest request) {
         List<String> requestedVideoIds = request.videoIds();
         if (requestedVideoIds == null || requestedVideoIds.isEmpty()) {
