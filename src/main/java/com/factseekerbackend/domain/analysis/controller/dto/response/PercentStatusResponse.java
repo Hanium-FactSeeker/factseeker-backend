@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.analysis.controller.dto.response;
 
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
@@ -15,7 +15,7 @@ public class PercentStatusResponse {
     private String videoId;
 
     @Schema(description = "상태", example = "COMPLETED")
-    private VideoAnalysisStatus status;
+    private AnalysisStatus status;
 
     @Schema(description = "완료된 경우의 총점", example = "78")
     private Integer totalConfidenceScore;
@@ -27,7 +27,7 @@ public class PercentStatusResponse {
         this.videoId = videoId;
     }
 
-    public PercentStatusResponse status(VideoAnalysisStatus status) {
+    public PercentStatusResponse status(AnalysisStatus status) {
         this.status = status;
         return this;
     }

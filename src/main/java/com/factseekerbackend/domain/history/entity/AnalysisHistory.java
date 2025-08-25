@@ -1,42 +1,27 @@
 package com.factseekerbackend.domain.history.entity;
 
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.video.VideoAnalysis;
 import com.factseekerbackend.domain.user.entity.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import com.factseekerbackend.global.common.BaseEntity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@DiscriminatorValue("ANALYSIS")
-public class AnalysisHistory extends History {
+public class AnalysisHistory extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "video_analysis_id")
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long analysisHistoryId;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_analysis_id", unique = true)
     private VideoAnalysis videoAnalysis;
-
-    @Column(nullable = false)
-    private String videoId;
-
-    @Column(nullable = false)
-    private String videoTitle;
-
-    private String thumbnailUrl;
-
-    @Builder
-    public AnalysisHistory(User user, VideoAnalysis videoAnalysis, String videoId, String videoTitle, String thumbnailUrl) {
-        super(user);
-        this.videoAnalysis = videoAnalysis;
-        this.videoId = videoId;
-        this.videoTitle = videoTitle;
-        this.thumbnailUrl = thumbnailUrl;
-    }
 }
