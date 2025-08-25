@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoListResponse;
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoItemResponse;
+import com.factseekerbackend.domain.youtube.controller.dto.response.VideoDto;
 import com.factseekerbackend.domain.youtube.service.PopularPoliticsService;
 import com.factseekerbackend.global.common.ApiResponse;
 
@@ -149,6 +150,57 @@ public class YoutubeController {
             return ResponseEntity.ok(ApiResponse.success("인기 정치 영상 단건을 성공적으로 조회했습니다.", item));
         } catch (Exception e) {
             log.error("[API] 인기 정치 영상 조회 실패: {}", e.getMessage());
+            return ResponseEntity.status(ErrorCode.VIDEO_NOT_FOUND.getStatus())
+                    .body(ApiResponse.error(ErrorCode.VIDEO_NOT_FOUND.getMessage()));
+        }
+    }
+
+    @Operation(
+            summary = "비디오ID로 유튜브 영상 조회",
+            description = "유튜브 Data API를 사용하여 videoId로 영상 정보를 단건 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            schema = @Schema(implementation = VideoDto.class),
+                            examples = @ExampleObject(name = "성공 예시", value = "{\n  \"success\": true,\n  \"message\": \"유튜브 비디오 정보를 성공적으로 조회했습니다.\",\n  \"data\": {\n    \"videoId\": \"4zB4rPMgCuQ\",\n    \"videoTitle\": \"검색한 동영상 이름\",\n    \"thumbnailUrl\": \"https://i.ytimg.com/vi/4zB4rPMgCuQ/hqdefault.jpg\",\n    \"channelId\": \"UCxxxxxxx\",\n    \"channelTitle\": \"정치채널\"\n  }\n}")
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "요청 오류",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(name = "실패 예시 (VIDEO_NOT_FOUND)", value = "{\n  \"success\": false,\n  \"message\": \"유효하지 않은 비디오ID 입니다.\"\n}")
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 오류",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    @GetMapping("/video")
+    public ResponseEntity<ApiResponse<VideoDto>> popularPoliticsByVideoId(
+            @Parameter(description = "조회할 유튜브 비디오ID", example = "4zB4rPMgCuQ")
+            @RequestParam("videoId") String videoId
+    ) {
+        try {
+            log.info("[API] 유튜브 비디오 단건 조회 - videoId: {}", videoId);
+            if (videoId == null || videoId.isBlank()) {
+                throw new IllegalArgumentException("videoId must not be empty");
+            }
+            VideoDto dto = youtubeService.getVideoById(videoId);
+            if (dto == null) {
+                log.error("[API] 유튜브 비디오 조회 실패: {}", "요청한 비디오ID의 영상 정보를 찾을 수 없습니다.");
+                return ResponseEntity.status(ErrorCode.VIDEO_NOT_FOUND.getStatus())
+                        .body(ApiResponse.error(ErrorCode.VIDEO_NOT_FOUND.getMessage()));
+            }
+            return ResponseEntity.ok(ApiResponse.success("유튜브 비디오 정보를 성공적으로 조회했습니다.", dto));
+        } catch (Exception e) {
+            log.error("[API] 유튜브 비디오 조회 실패: {}", e.getMessage());
             return ResponseEntity.status(ErrorCode.VIDEO_NOT_FOUND.getStatus())
                     .body(ApiResponse.error(ErrorCode.VIDEO_NOT_FOUND.getMessage()));
         }

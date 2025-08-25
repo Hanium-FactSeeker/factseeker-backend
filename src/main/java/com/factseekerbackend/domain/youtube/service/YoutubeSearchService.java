@@ -63,4 +63,18 @@ public class YoutubeSearchService implements YoutubeService {
                 .map(VideoDto::from)
                 .toList();
     }
+
+    @Override
+    public VideoDto getVideoById(String videoId) throws IOException {
+        YouTube.Videos.List request = youTube.videos()
+                .list(List.of("id,snippet,statistics,contentDetails"));
+        request.setKey(apiKey);
+        request.setId(List.of(videoId));
+
+        List<Video> items = request.execute().getItems();
+        if (items == null || items.isEmpty()) {
+            return null;
+        }
+        return VideoDto.from(items.get(0));
+    }
 }
