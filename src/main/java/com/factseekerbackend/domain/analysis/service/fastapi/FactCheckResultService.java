@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
-import com.factseekerbackend.domain.analysis.controller.dto.response.FastApiFactCheckResponse;
+import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.FastApiFactCheckResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
 import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +38,7 @@ public class FactCheckResultService {
             Top10VideoAnalysis top10VideoAnalysis = top10VideoAnalysisRepository.findById(dto.videoId())
                     .orElseGet(() -> Top10VideoAnalysis.builder().videoId(dto.videoId()).build())
                     .toBuilder()
+                    .status(VideoAnalysisStatus.COMPLETED)
                     .videoUrl(dto.videoUrl())
                     .totalConfidenceScore(dto.videoTotalConfidenceScore())
                     .summary(dto.summary())
@@ -51,6 +54,19 @@ public class FactCheckResultService {
         } catch (Exception e) {
             log.error("Error in upsertFromFastApiResponse: {}", e.getMessage(), e);
         }
+    }
+
+    public void saveFailedTop10Analysis(String videoId) {
+        if (videoId == null || videoId.isBlank()) return;
+
+        Top10VideoAnalysis failedAnalysis = top10VideoAnalysisRepository.findById(videoId)
+                .orElseGet(() -> Top10VideoAnalysis.builder().videoId(videoId).build())
+                .toBuilder()
+                .status(VideoAnalysisStatus.FAILED)
+                .createdAt(LocalDateTime.now()) // Record the time of failure
+                .build();
+
+        top10VideoAnalysisRepository.save(failedAnalysis);
     }
 
     public VideoAnalysisResponse buildResponseFromFastApiNotLogin(String json) {
