@@ -1,28 +1,29 @@
-package com.factseekerbackend.domain.analysis.entity.video;
+package com.factseekerbackend.domain.analysis.entity;
 
-import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
-import com.factseekerbackend.domain.analysis.service.fastapi.FactCheckResultService;
-import com.factseekerbackend.domain.history.entity.AnalysisHistory;
-import com.factseekerbackend.domain.user.entity.User;
-import jakarta.persistence.*;
+import com.factseekerbackend.global.common.BaseEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
-
 @Entity
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder(toBuilder = true)
 @Getter
-public class VideoAnalysis {
+@Builder(toBuilder = true)
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Top10VideoAnalysis {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "video_analysis_id")
-    private Long id;
-
-    @Column(name = "video_id", length = 225, nullable = false)
+    @Column(name = "video_id", length = 32, nullable = false)
     private String videoId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    private VideoAnalysisStatus status;
 
     @Column(name = "video_url", length = 255)
     private String videoUrl;
@@ -50,12 +51,5 @@ public class VideoAnalysis {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private AnalysisStatus status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 }
+
