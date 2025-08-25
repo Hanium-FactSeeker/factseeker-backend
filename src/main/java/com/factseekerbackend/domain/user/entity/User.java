@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.user.entity;
 
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.video.VideoAnalysis;
 import com.factseekerbackend.global.common.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

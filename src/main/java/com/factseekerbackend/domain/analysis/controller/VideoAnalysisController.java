@@ -4,8 +4,8 @@ import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequ
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.*;
 import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
-import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
 import com.factseekerbackend.domain.analysis.service.VideoAnalysisService;
 import com.factseekerbackend.domain.analysis.service.fastapi.FactCheckTriggerService;
 import com.factseekerbackend.domain.user.entity.CustomUserDetails;
@@ -92,11 +92,11 @@ public class VideoAnalysisController {
         try {
             Long userId = userDetails.getId();
             VideoAnalysisResponse videoAnalysis = videoAnalysisService.getVideoAnalysis(userId, videoAnalysisId);
-            if (videoAnalysis.getStatus() == VideoAnalysisStatus.FAILED) {
+            if (videoAnalysis.getStatus() == AnalysisStatus.FAILED) {
                 return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
                         .body(ApiResponse.error("비디오 분석에 실패했습니다."));
             }
-            if (videoAnalysis.getStatus() == VideoAnalysisStatus.PENDING) {
+            if (videoAnalysis.getStatus() == AnalysisStatus.PENDING) {
                 return ResponseEntity.status(org.springframework.http.HttpStatus.ACCEPTED)
                         .body(ApiResponse.success("분석 진행 중입니다.", videoAnalysis));
             }
@@ -174,7 +174,7 @@ public class VideoAnalysisController {
                         ResponseEntity.ok(
                                 ApiResponse.success(
                                         "비디오 분석이 성공적으로 요청되었습니다.",
-                                        new AnalysisStartResponse(analysisId, VideoAnalysisStatus.PENDING)
+                                        new AnalysisStartResponse(analysisId, AnalysisStatus.PENDING)
                                 )
                         )
                 );
@@ -186,7 +186,7 @@ public class VideoAnalysisController {
                                 return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus())
                                         .body(ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE.getMessage()));
                             }
-                            if (result.getStatus() == VideoAnalysisStatus.FAILED) {
+                            if (result.getStatus() == AnalysisStatus.FAILED) {
                                 return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
                                         .body(ApiResponse.error("비디오 분석에 실패했습니다."));
                             }
@@ -255,11 +255,11 @@ public class VideoAnalysisController {
             @PathVariable("videoId") String videoId) {
         return top10VideoAnalysisRepository.findById(videoId)
                 .map(analysis -> {
-                    if (analysis.getStatus() == VideoAnalysisStatus.FAILED) {
+                    if (analysis.getStatus() == AnalysisStatus.FAILED) {
                         return ResponseEntity.status(500)
                                 .body(VideoAnalysisResponse.builder()
                                         .videoId(analysis.getVideoId())
-                                        .status(VideoAnalysisStatus.FAILED)
+                                        .status(AnalysisStatus.FAILED)
                                         .build());
                     }
                     Object claims = parseClaims(analysis.getClaims());
@@ -274,7 +274,7 @@ public class VideoAnalysisController {
                     return ResponseEntity.accepted().body(
                             VideoAnalysisResponse.builder()
                                     .videoId(videoId)
-                                    .status(VideoAnalysisStatus.PENDING)
+                                    .status(AnalysisStatus.PENDING)
                                     .build()
                     );
                 });
@@ -316,12 +316,12 @@ public class VideoAnalysisController {
             Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND, ErrorCode.VIDEO_NOT_FOUND.getMessage()));
 
-            if (analysis.getStatus() == VideoAnalysisStatus.FAILED) {
+            if (analysis.getStatus() == AnalysisStatus.FAILED) {
                 return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus())
                         .body(ApiResponse.error("분석이 실패하여 키워드를 제공할 수 없습니다."));
             }
 
-            if (analysis.getStatus() == VideoAnalysisStatus.PENDING) {
+            if (analysis.getStatus() == AnalysisStatus.PENDING) {
                 return ResponseEntity.ok(ApiResponse.success("분석이 진행 중입니다.", new KeywordsResponse(java.util.List.of())));
             }
 
@@ -373,7 +373,7 @@ public class VideoAnalysisController {
     public ResponseEntity<ApiResponse<PercentStatusData>> getVideoPercent(
             @PathVariable("videoId") String videoId
     ) {
-        VideoIdsRequest request = new VideoIdsRequest(List.of(videoId));
+        VideoIdsRequest request = VideoIdsRequest.from(List.of(videoId));
         PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(request);
         return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", statusData));
     }
@@ -415,5 +415,46 @@ public class VideoAnalysisController {
     ) {
         PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(request);
         return ResponseEntity.ok(ApiResponse.success("조회 성공(일부 불가 포함)", statusData));
+    }
+
+    @Operation(
+            summary = "최근 조회 비디오 3개",
+            description = "메인화면에서 최근 조회한 url3 개를 title과 함께 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "성공 예시", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공\",\n  \"data\": [\n    {\n      \"videoAnalysisId\": 4,\n      \"videoUrl\": \"https://www.youtube.com/watch?v=FpV9Menr_Vo\",\n      \"videoTitle\": \"내란 밀정 주진우 쓰레기의 오래전 이야기. #정치#민주당 #이재명  #윤석열 #국민의 힘 #김건희\"\n    },\n    {\n      \"videoAnalysisId\": 3,\n      \"videoUrl\": \"https://www.youtube.com/watch?v=pWv9pQ3cZZA\",\n      \"videoTitle\": \"[백운기의 정치1번지] 성의 없는 거짓말쟁이들 압수수색, 잘한다 내란 특검!\"\n    },\n    {\n      \"videoAnalysisId\": 2,\n      \"videoUrl\": \"https://www.youtube.com/watch?v=4uT1Pe9upZs\",\n      \"videoTitle\": \"[에디터픽] 미국 ‘전례 없는 상황’...난장판 된 미국 정치 / YTN\"\n    }\n  ]\n}"),
+                                    @ExampleObject(name = "빈 배열 예시", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공\",\n  \"data\": []\n}")
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"인증이 필요합니다.\"\n}"))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"서버 내부 오류가 발생했습니다.\"\n}"))
+            )
+    })
+    @GetMapping("/me/recent")
+    public ResponseEntity<ApiResponse<List<RecentAnalysisVideoResponse>>> getThreeRecentVideos(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails
+    ) {
+        Long userId = customUserDetails.getId();
+        List<RecentAnalysisVideoResponse> threeRecentVideos = videoAnalysisService.getThreeRecentVideos(userId);
+        return ResponseEntity.ok(ApiResponse.success("조회 성공", threeRecentVideos));
     }
 }

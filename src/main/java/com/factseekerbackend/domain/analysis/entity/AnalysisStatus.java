@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.analysis.entity;
 
-public enum VideoAnalysisStatus {
+public enum AnalysisStatus {
     PENDING,
     COMPLETED,
     FAILED,

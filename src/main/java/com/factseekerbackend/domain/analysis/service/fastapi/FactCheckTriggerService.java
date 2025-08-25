@@ -1,7 +1,7 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.video.VideoAnalysis;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.service.fastapi.dto.FactCheckRequest;
 import com.factseekerbackend.domain.user.repository.UserRepository;
@@ -13,9 +13,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
 
 @Slf4j
 @Service
@@ -102,7 +101,7 @@ public class FactCheckTriggerService {
                 .videoId(normalizedVideoId)
                 .videoUrl(youtubeUrl)
                 .user(userRepository.findById(userId).orElse(null))
-                .status(VideoAnalysisStatus.PENDING)
+                .status(AnalysisStatus.PENDING)
                 .build();
         pending = videoAnalysisRepository.save(pending);
 
@@ -143,7 +142,7 @@ public class FactCheckTriggerService {
                 // 실패 시 해당 레코드 상태를 FAILED로 업데이트
                 try {
                     videoAnalysisRepository.findById(videoAnalysisId).ifPresent(va -> {
-                        VideoAnalysis failed = va.toBuilder().status(VideoAnalysisStatus.FAILED).build();
+                        VideoAnalysis failed = va.toBuilder().status(AnalysisStatus.FAILED).build();
                         videoAnalysisRepository.save(failed);
                     });
                 } catch (Exception ignored) {}
@@ -173,7 +172,7 @@ public class FactCheckTriggerService {
         // 초기 응답 상태만 표현
         VideoAnalysisResponse pending = VideoAnalysisResponse.builder()
                 .videoId(videoId)
-                .status(VideoAnalysisStatus.PENDING)
+                .status(AnalysisStatus.PENDING)
                 .build();
 
         int maxAttempts = 3;
@@ -200,7 +199,7 @@ public class FactCheckTriggerService {
                         videoId, attempt, maxAttempts, e.toString());
                 pending = VideoAnalysisResponse.builder()
                         .videoId(videoId)
-                        .status(VideoAnalysisStatus.FAILED)
+                        .status(AnalysisStatus.FAILED)
                         .build();
                 try {
                     Thread.sleep(backoffMs);
@@ -213,7 +212,7 @@ public class FactCheckTriggerService {
         log.error("최대 재시도 횟수(" + maxAttempts + "회)를 초과했습니다. videoId: " + videoId);
         pending = VideoAnalysisResponse.builder()
                 .videoId(videoId)
-                .status(VideoAnalysisStatus.FAILED)
+                .status(AnalysisStatus.FAILED)
                 .build();
         return CompletableFuture.completedFuture(pending);
     }
