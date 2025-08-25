@@ -78,24 +78,51 @@ public class PoliticianTrustAnalysisService {
     /**
      * 특정 정치인의 신뢰도를 분석합니다.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void analyzePoliticianTrustScore(Politician politician, LocalDate analysisDate, String analysisPeriod) {
-        // 기존 분석 결과 확인 (날짜와 관계없이 가장 최근 것)
-        PoliticianTrustScore existingScore = trustScoreRepository.findByPoliticianIdOrderByAnalysisDateDesc(
-                politician.getId()).stream().findFirst().orElse(null);
-        
-        if (existingScore != null) {
-            // 기존 분석이 완료된 경우에만 실패한 LLM만 재분석
-            if (existingScore.getAnalysisStatus() == AnalysisStatus.COMPLETED) {
-                log.info("[ANALYSIS] {} 이미 완료된 분석 존재 - 실패한 LLM만 재분석", politician.getName());
-                analyzeFailedLLMsOnly(politician, existingScore, analysisPeriod);
-                return;
-            } else {
-                // COMPLETED가 아닌 모든 경우(FAILED, PENDING, IN_PROGRESS 등)는 기존 row 재사용
-                log.info("[ANALYSIS] {} 기존 분석이 미완료 상태 - 기존 row에 재분석", politician.getName());
+        try {
+            // 1. 데이터 조회만 트랜잭션 내에서 (Lock 시간 최소화)
+            PoliticianTrustScore existingScore = getExistingScoreWithTransaction(politician.getId());
+            
+            if (existingScore != null) {
+                // 기존 분석이 완료된 경우에만 실패한 LLM만 재분석
+                if (existingScore.getAnalysisStatus() == AnalysisStatus.COMPLETED) {
+                    log.info("[ANALYSIS] {} 이미 완료된 분석 존재 - 실패한 LLM만 재분석", politician.getName());
+                    analyzeFailedLLMsOnly(politician, existingScore, analysisPeriod);
+                    return;
+                } else {
+                    // COMPLETED가 아닌 모든 경우(FAILED, PENDING, IN_PROGRESS 등)는 기존 row 재사용
+                    log.info("[ANALYSIS] {} 기존 분석이 미완료 상태 - 기존 row에 재분석", politician.getName());
+                }
             }
-        }
 
+            // 2. LLM 분석은 트랜잭션 밖에서 실행 (Lock 없음)
+            List<LLMAnalysisResult> results = executeLLMAnalysisOutsideTransaction(politician, analysisPeriod);
+
+            // 3. 결과 처리 및 저장만 트랜잭션 내에서 (Lock 시간 최소화)
+            processAndSaveResultsWithTransaction(politician, existingScore, results, analysisDate, analysisPeriod);
+
+        } catch (Exception e) {
+            log.error("[ANALYSIS] {} 분석 중 오류 발생: {}", politician.getName(), e.getMessage());
+            // 오류 발생 시 실패 상태로 저장
+            saveFailedResultWithTransaction(politician, existingScore, analysisDate, analysisPeriod, "분석 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 트랜잭션 내에서 기존 분석 결과를 조회합니다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public PoliticianTrustScore getExistingScoreWithTransaction(Long politicianId) {
+        return trustScoreRepository.findByPoliticianIdOrderByAnalysisDateDesc(politicianId)
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 트랜잭션 밖에서 LLM 분석을 실행합니다.
+     */
+    private List<LLMAnalysisResult> executeLLMAnalysisOutsideTransaction(Politician politician, String analysisPeriod) {
         try {
             // 2개 LLM 동시 분석 실행
             List<CompletableFuture<LLMAnalysisResult>> futures = List.of(
@@ -106,56 +133,103 @@ public class PoliticianTrustAnalysisService {
             // 모든 분석 완료 대기
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-            // 결과 수집 및 점수 계산
-            List<LLMAnalysisResult> results = futures.stream()
+            // 결과 수집
+            return futures.stream()
                     .map(CompletableFuture::join)
                     .toList();
 
-            // 성공한 분석 결과만 필터링
-            List<LLMAnalysisResult> successfulResults = results.stream()
-                    .filter(LLMAnalysisResult::isSuccess)
-                    .toList();
+        } catch (Exception e) {
+            log.error("[ANALYSIS] {} LLM 분석 실행 실패: {}", politician.getName(), e.getMessage());
+            return new ArrayList<>();
+        }
+    }
 
-            if (successfulResults.isEmpty()) {
-                // 분석 실패 시 실패 상태로 저장
-                PoliticianTrustScore trustScore;
-                if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
-                    // 기존 row 재사용
-                    trustScore = existingScore;
-                    trustScore.setAnalysisDate(analysisDate);
-                    trustScore.setAnalysisPeriod(analysisPeriod);
-                } else {
-                    // 새로운 row 생성
-                    trustScore = PoliticianTrustScore.builder()
-                            .politician(politician)
-                            .analysisDate(analysisDate)
-                            .analysisPeriod(analysisPeriod)
-                            .build();
+    /**
+     * 트랜잭션 내에서 결과를 처리하고 저장합니다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void processAndSaveResultsWithTransaction(Politician politician, PoliticianTrustScore existingScore, 
+                                                   List<LLMAnalysisResult> results, LocalDate analysisDate, String analysisPeriod) {
+        
+        // 성공한 분석 결과만 필터링
+        List<LLMAnalysisResult> successfulResults = results.stream()
+                .filter(LLMAnalysisResult::isSuccess)
+                .toList();
+
+        if (successfulResults.isEmpty()) {
+            // 분석 실패 시 실패 상태로 저장
+            saveFailedResultWithTransaction(politician, existingScore, analysisDate, analysisPeriod, "모든 LLM 분석이 실패했습니다.");
+            return;
+        }
+
+        // 점수 계산
+        int totalIntegrity = 0, totalTransparency = 0, totalConsistency = 0, totalAccountability = 0;
+        int validCount = 0;
+
+        // LLM별 점수 초기화 (실패 시 null)
+        Integer gptScore = null;
+        Integer geminiScore = null;
+
+        for (LLMAnalysisResult result : successfulResults) {
+            if (result.getIntegrityScore() != null) {
+                totalIntegrity += result.getIntegrityScore();
+                totalTransparency += result.getTransparencyScore();
+                totalConsistency += result.getConsistencyScore();
+                totalAccountability += result.getAccountabilityScore();
+                validCount++;
+            }
+        }
+
+        // LLM별 점수 설정 (각 서비스 타입에 따라)
+        for (int i = 0; i < results.size(); i++) {
+            LLMAnalysisResult result = results.get(i);
+            LLMServiceType serviceType = null;
+            if (i == 0) {
+                serviceType = LLMServiceType.GPT;
+            } else if (i == 1) {
+                serviceType = LLMServiceType.GEMINI;
+            }
+            
+            if (result.isSuccess() && result.getOverallScore() != null) {
+                switch (serviceType) {
+                    case GPT:
+                        gptScore = result.getOverallScore();
+                        break;
+                    case GEMINI:
+                        geminiScore = result.getOverallScore();
+                        break;
                 }
-                trustScore.markAsFailed("모든 LLM 분석이 실패했습니다.");
-                trustScoreRepository.save(trustScore);
-                return;
+            }
+        }
+
+        if (validCount > 0) {
+            int avgIntegrity = totalIntegrity / validCount;
+            int avgTransparency = totalTransparency / validCount;
+            int avgConsistency = totalConsistency / validCount;
+            int avgAccountability = totalAccountability / validCount;
+            int overallScore = (avgIntegrity + avgTransparency + avgConsistency + avgAccountability) / 4;
+
+            // 기존 분석 결과가 있고 COMPLETED가 아닌 경우 업데이트, 그 외에는 새로 생성
+            PoliticianTrustScore trustScore;
+            if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
+                // 기존 결과 업데이트
+                trustScore = existingScore;
+                trustScore.setAnalysisDate(analysisDate);
+                trustScore.setAnalysisPeriod(analysisPeriod);
+            } else {
+                // 새로운 결과 생성
+                trustScore = PoliticianTrustScore.builder()
+                        .politician(politician)
+                        .analysisDate(analysisDate)
+                        .analysisPeriod(analysisPeriod)
+                        .build();
             }
 
-            // 점수 계산
-            int totalIntegrity = 0, totalTransparency = 0, totalConsistency = 0, totalAccountability = 0;
-            int validCount = 0;
+            // 점수 업데이트
+            trustScore.updateScores(overallScore, avgIntegrity, avgTransparency, avgConsistency, avgAccountability,
+                    gptScore, geminiScore);
 
-            // LLM별 점수 초기화 (실패 시 null)
-            Integer gptScore = null;
-            Integer geminiScore = null;
-
-            for (LLMAnalysisResult result : successfulResults) {
-                if (result.getIntegrityScore() != null) {
-                    totalIntegrity += result.getIntegrityScore();
-                    totalTransparency += result.getTransparencyScore();
-                    totalConsistency += result.getConsistencyScore();
-                    totalAccountability += result.getAccountabilityScore();
-                    validCount++;
-                }
-            }
-
-            // LLM별 점수 설정 (각 서비스 타입에 따라)
+            // 각 LLM별 근거 업데이트
             for (int i = 0; i < results.size(); i++) {
                 LLMAnalysisResult result = results.get(i);
                 LLMServiceType serviceType = null;
@@ -165,121 +239,60 @@ public class PoliticianTrustAnalysisService {
                     serviceType = LLMServiceType.GEMINI;
                 }
                 
-                if (result.isSuccess() && result.getOverallScore() != null) {
+                if (result.isSuccess()) {
                     switch (serviceType) {
                         case GPT:
-                            gptScore = result.getOverallScore();
+                            trustScore.updateGPTReasons(
+                                result.getIntegrityReason(),
+                                result.getTransparencyReason(),
+                                result.getConsistencyReason(),
+                                result.getAccountabilityReason()
+                            );
                             break;
                         case GEMINI:
-                            geminiScore = result.getOverallScore();
+                            trustScore.updateGeminiReasons(
+                                result.getIntegrityReason(),
+                                result.getTransparencyReason(),
+                                result.getConsistencyReason(),
+                                result.getAccountabilityReason()
+                            );
                             break;
                     }
                 }
             }
 
-            if (validCount > 0) {
-                int avgIntegrity = totalIntegrity / validCount;
-                int avgTransparency = totalTransparency / validCount;
-                int avgConsistency = totalConsistency / validCount;
-                int avgAccountability = totalAccountability / validCount;
-                int overallScore = (avgIntegrity + avgTransparency + avgConsistency + avgAccountability) / 4;
-
-                // 기존 분석 결과가 있고 COMPLETED가 아닌 경우 업데이트, 그 외에는 새로 생성
-                PoliticianTrustScore trustScore;
-                if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
-                    // 기존 결과 업데이트
-                    trustScore = existingScore;
-                    trustScore.setAnalysisDate(analysisDate);
-                    trustScore.setAnalysisPeriod(analysisPeriod);
-                } else {
-                    // 새로운 결과 생성
-                    trustScore = PoliticianTrustScore.builder()
-                            .politician(politician)
-                            .analysisDate(analysisDate)
-                            .analysisPeriod(analysisPeriod)
-                            .build();
-                }
-
-                // 점수 업데이트
-                trustScore.updateScores(overallScore, avgIntegrity, avgTransparency, avgConsistency, avgAccountability,
-                        gptScore, geminiScore);
-
-                // 각 LLM별 근거 업데이트
-                for (int i = 0; i < results.size(); i++) {
-                    LLMAnalysisResult result = results.get(i);
-                    LLMServiceType serviceType = null;
-                    if (i == 0) {
-                        serviceType = LLMServiceType.GPT;
-                    } else if (i == 1) {
-                        serviceType = LLMServiceType.GEMINI;
-                    }
-                    
-                    if (result.isSuccess()) {
-                        switch (serviceType) {
-                            case GPT:
-                                trustScore.updateGPTReasons(
-                                    result.getIntegrityReason(),
-                                    result.getTransparencyReason(),
-                                    result.getConsistencyReason(),
-                                    result.getAccountabilityReason()
-                                );
-                                break;
-                            case GEMINI:
-                                trustScore.updateGeminiReasons(
-                                    result.getIntegrityReason(),
-                                    result.getTransparencyReason(),
-                                    result.getConsistencyReason(),
-                                    result.getAccountabilityReason()
-                                );
-                                break;
-                        }
-                    }
-                }
-
-                // 데이터베이스에 저장
-                trustScoreRepository.save(trustScore);
-
-                log.info("[ANALYSIS] {} 분석 완료 - 종합점수: {}", politician.getName(), overallScore);
-            } else {
-                // 유효한 결과가 없는 경우 실패 상태로 저장
-                PoliticianTrustScore trustScore;
-                if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
-                    // 기존 row 재사용
-                    trustScore = existingScore;
-                    trustScore.setAnalysisDate(analysisDate);
-                    trustScore.setAnalysisPeriod(analysisPeriod);
-                } else {
-                    // 새로운 row 생성
-                    trustScore = PoliticianTrustScore.builder()
-                            .politician(politician)
-                            .analysisDate(analysisDate)
-                            .analysisPeriod(analysisPeriod)
-                            .build();
-                }
-                trustScore.markAsFailed("유효한 분석 결과가 없습니다.");
-                trustScoreRepository.save(trustScore);
-            }
-
-        } catch (Exception e) {
-            log.error("[ANALYSIS] {} 분석 중 오류 발생: {}", politician.getName(), e.getMessage());
-            // 오류 발생 시 실패 상태로 저장
-            PoliticianTrustScore trustScore;
-            if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
-                // 기존 row 재사용
-                trustScore = existingScore;
-                trustScore.setAnalysisDate(analysisDate);
-                trustScore.setAnalysisPeriod(analysisPeriod);
-            } else {
-                // 새로운 row 생성
-                trustScore = PoliticianTrustScore.builder()
-                        .politician(politician)
-                        .analysisDate(analysisDate)
-                        .analysisPeriod(analysisPeriod)
-                        .build();
-            }
-            trustScore.markAsFailed("분석 중 오류 발생: " + e.getMessage());
+            // 데이터베이스에 저장
             trustScoreRepository.save(trustScore);
+
+            log.info("[ANALYSIS] {} 분석 완료 - 종합점수: {}", politician.getName(), overallScore);
+        } else {
+            // 유효한 결과가 없는 경우 실패 상태로 저장
+            saveFailedResultWithTransaction(politician, existingScore, analysisDate, analysisPeriod, "유효한 분석 결과가 없습니다.");
         }
+    }
+
+    /**
+     * 트랜잭션 내에서 실패 결과를 저장합니다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveFailedResultWithTransaction(Politician politician, PoliticianTrustScore existingScore, 
+                                              LocalDate analysisDate, String analysisPeriod, String errorMessage) {
+        PoliticianTrustScore trustScore;
+        if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
+            // 기존 row 재사용
+            trustScore = existingScore;
+            trustScore.setAnalysisDate(analysisDate);
+            trustScore.setAnalysisPeriod(analysisPeriod);
+        } else {
+            // 새로운 row 생성
+            trustScore = PoliticianTrustScore.builder()
+                    .politician(politician)
+                    .analysisDate(analysisDate)
+                    .analysisPeriod(analysisPeriod)
+                    .build();
+        }
+        trustScore.markAsFailed(errorMessage);
+        trustScoreRepository.save(trustScore);
     }
 
     /**
