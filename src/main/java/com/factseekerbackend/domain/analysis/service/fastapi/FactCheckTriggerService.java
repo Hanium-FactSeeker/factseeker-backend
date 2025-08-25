@@ -112,7 +112,7 @@ public class FactCheckTriggerService {
         return pending.getId();
     }
 
-    @Async
+    @Async("factCheckExecutor")
     public void processFactCheck(Long videoAnalysisId, String normalizedVideoId, String youtubeUrl, Long userId) {
         int maxAttempts = 3;
         long backoffMs = 200L;
@@ -158,7 +158,7 @@ public class FactCheckTriggerService {
         }
     }
 
-    @Async
+    @Async("factCheckExecutor")
     public CompletableFuture<VideoAnalysisResponse> triggerSingleToRdsToNotLogin(String videoId) {
 
         if (videoId == null || videoId.isBlank()) {

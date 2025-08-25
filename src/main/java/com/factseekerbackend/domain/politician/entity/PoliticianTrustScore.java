@@ -157,4 +157,13 @@ public class PoliticianTrustScore {
     public boolean canRetry() {
         return this.retryCount < 3;
     }
+
+    public void setAnalysisDate(LocalDate analysisDate) {
+        this.analysisDate = analysisDate;
+    }
+
+    public void setAnalysisPeriod(String analysisPeriod) {
+        this.analysisPeriod = analysisPeriod;
+    }
+    
 }
