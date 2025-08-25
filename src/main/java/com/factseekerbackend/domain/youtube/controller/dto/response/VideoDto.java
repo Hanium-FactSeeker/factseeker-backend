@@ -3,7 +3,9 @@ package com.factseekerbackend.domain.youtube.controller.dto.response;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
 
-public record VideoDto(String videoId, String videoTitle, String thumbnailUrl) {
+import java.util.Objects;
+
+public record VideoDto(String videoId, String videoTitle, String thumbnailUrl, String channelId, String channelTitle) {
 
     public static VideoDto from(Video video) {
         VideoSnippet snippet = video.getSnippet();
@@ -17,7 +19,9 @@ public record VideoDto(String videoId, String videoTitle, String thumbnailUrl) {
         } else if (snippet != null && snippet.getThumbnails() != null && snippet.getThumbnails().getDefault() != null) {
             thumbnailUrl = snippet.getThumbnails().getDefault().getUrl();
         }
+        String channelId = video.getSnippet() != null ? video.getSnippet().getChannelId() : null;
+        String channelTitle = Objects.requireNonNull(video.getSnippet()).getChannelTitle();
 
-        return new VideoDto(id, title, thumbnailUrl);
+        return new VideoDto(id, title, thumbnailUrl,channelId,channelTitle);
     }
 }

@@ -2,7 +2,7 @@ package com.factseekerbackend.domain.youtube.service;
 
 
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoDto;
-import com.factseekerbackend.domain.youtube.controller.dto.response.VideoListResponseDto;
+import com.factseekerbackend.domain.youtube.controller.dto.response.VideoListResponse;
 import com.factseekerbackend.domain.youtube.controller.dto.response.YoutubeSearchResponse;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
@@ -43,9 +43,9 @@ public class YoutubeSearchService implements YoutubeService {
     }
 
     @Override
-    public VideoListResponseDto getPopularPoliticsTop10Resp(long size) throws IOException {
+    public VideoListResponse getPopularPoliticsTop10Resp(long size) throws IOException {
         List<VideoDto> data = getPopularPoliticsTop10(size);
-        return VideoListResponseDto.from(data, OffsetDateTime.now(ZoneId.of("Asia/Seoul")).toString());
+        return VideoListResponse.from(data, OffsetDateTime.now(ZoneId.of("Asia/Seoul")).toString());
     }
 
     private List<VideoDto> getPopularPoliticsTop10(long size) throws IOException {
