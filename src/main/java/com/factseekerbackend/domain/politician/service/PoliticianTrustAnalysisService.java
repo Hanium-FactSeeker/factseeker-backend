@@ -79,9 +79,12 @@ public class PoliticianTrustAnalysisService {
      * 특정 정치인의 신뢰도를 분석합니다.
      */
     public void analyzePoliticianTrustScore(Politician politician, LocalDate analysisDate, String analysisPeriod) {
+        // 변수를 try 블록 밖에서 선언하여 catch 블록에서도 접근 가능하게 함
+        PoliticianTrustScore existingScore = null;
+        
         try {
             // 1. 데이터 조회만 트랜잭션 내에서 (Lock 시간 최소화)
-            PoliticianTrustScore existingScore = getExistingScoreWithTransaction(politician.getId());
+            existingScore = getExistingScoreWithTransaction(politician.getId());
             
             if (existingScore != null) {
                 // 기존 분석이 완료된 경우에만 실패한 LLM만 재분석
