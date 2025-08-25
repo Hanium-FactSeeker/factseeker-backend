@@ -11,4 +11,5 @@ public interface YoutubeService {
     List<YoutubeSearchResponse> searchVideos(String query) throws IOException;
     VideoListResponse getPopularPoliticsTop10Resp(long size) throws IOException;
     VideoDto getVideoById(String videoId) throws IOException;
+
 }

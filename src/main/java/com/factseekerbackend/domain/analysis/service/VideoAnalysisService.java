@@ -3,13 +3,11 @@ package com.factseekerbackend.domain.analysis.service;
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.*;
 import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
-import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.video.VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
-import com.factseekerbackend.domain.youtube.controller.dto.response.VideoDto;
-import com.factseekerbackend.domain.youtube.service.YoutubeService;
 import com.factseekerbackend.global.exception.BusinessException;
 import com.factseekerbackend.global.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,7 +20,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,7 +33,6 @@ public class VideoAnalysisService {
     private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
     private final RedisTemplate<String, Object> cacheRedis;
     private final ObjectMapper om;
-    private final YoutubeService youtubeService;
 
     public VideoAnalysisResponse getVideoAnalysis(Long userId, Long videoAnalysisId) {
         VideoAnalysis videoAnalysis = repository.findByUserIdAndId(userId, videoAnalysisId)
@@ -62,7 +58,7 @@ public class VideoAnalysisService {
     public KeywordsResponse getTop10YoutubeKeywords(String videoId) {
         Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND, ErrorCode.VIDEO_NOT_FOUND.getMessage()));
-        if (analysis.getStatus() == AnalysisStatus.FAILED) {
+        if (analysis.getStatus() == VideoAnalysisStatus.FAILED) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "분석이 실패하여 키워드를 제공할 수 없습니다.");
         }
         return KeywordsResponse.from(analysis);
@@ -97,19 +93,19 @@ public class VideoAnalysisService {
             PercentStatusResponse result = new PercentStatusResponse(videoId);
 
             if (analysis != null) { // Case: Found in DB
-                if (analysis.getStatus() == AnalysisStatus.COMPLETED) {
-                    result.status(AnalysisStatus.COMPLETED).totalConfidenceScore(analysis.getTotalConfidenceScore());
+                if (analysis.getStatus() == VideoAnalysisStatus.COMPLETED) {
+                    result.status(VideoAnalysisStatus.COMPLETED).totalConfidenceScore(analysis.getTotalConfidenceScore());
                     completed++;
                 } else { // FAILED
-                    result.status(AnalysisStatus.FAILED);
+                    result.status(VideoAnalysisStatus.FAILED);
                     failed++;
                 }
             } else { // Case: Not found in DB
                 if (validTop10Ids.contains(videoId)) {
-                    result.status(AnalysisStatus.PENDING);
+                    result.status(VideoAnalysisStatus.PENDING);
                     pending++;
                 } else {
-                    result.status(AnalysisStatus.NOT_FOUND).message("해당 ID는 Top 10 목록에 없습니다.");
+                    result.status(VideoAnalysisStatus.NOT_FOUND).message("해당 ID는 Top 10 목록에 없습니다.");
                     notFound++;
                 }
             }
@@ -151,23 +147,5 @@ public class VideoAnalysisService {
 
     private String rankKey(int rank) {
         return "popular:politics:KR:rank:" + rank;
-    }
-
-    public List<RecentAnalysisVideoResponse> getThreeRecentVideos(Long userId) {
-        return repository.findTop3ByUserIdOrderByCreatedAtDesc(userId).stream()
-                .map(videoAnalysis -> {
-                    try {
-                        VideoDto videoDto = youtubeService.getVideoById(videoAnalysis.getVideoId());
-                        String title = (videoDto != null && videoDto.videoTitle() != null) ? videoDto.videoTitle() : "";
-                        return RecentAnalysisVideoResponse.from(videoAnalysis, title);
-                    } catch (IOException e) {
-                        // 메인 안정성: 개별 실패는 스킵하고 가능한 항목만 반환
-                        log.warn("유튜브 메타데이터 조회 실패, 해당 항목 건너뜀. videoId={}, analysisId={}",
-                                videoAnalysis.getVideoId(), videoAnalysis.getId(), e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
     }
 }
