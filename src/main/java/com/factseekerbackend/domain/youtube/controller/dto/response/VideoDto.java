@@ -12,7 +12,7 @@ public record VideoDto(String videoId, String videoTitle, String thumbnailUrl, S
 
         String id = video.getId();
         String title = (snippet != null && snippet.getTitle() != null) ? snippet.getTitle() : "";
-
+        
         String thumbnailUrl = null;
         if (snippet != null && snippet.getThumbnails() != null && snippet.getThumbnails().getHigh() != null) {
             thumbnailUrl = snippet.getThumbnails().getHigh().getUrl();
