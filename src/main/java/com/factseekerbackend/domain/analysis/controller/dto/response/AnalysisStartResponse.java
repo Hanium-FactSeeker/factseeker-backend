@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.analysis.controller.dto.response;
 
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,5 +13,5 @@ public class AnalysisStartResponse {
     private final Long analysisId;
 
     @Schema(description = "현재 상태", example = "PENDING")
-    private final VideoAnalysisStatus status;
+    private final AnalysisStatus status;
 }

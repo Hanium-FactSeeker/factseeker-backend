@@ -2,9 +2,9 @@ package com.factseekerbackend.domain.analysis.service.fastapi;
 
 import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.FastApiFactCheckResponse;
 import com.factseekerbackend.domain.analysis.controller.dto.response.VideoAnalysisResponse;
-import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.video.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
 import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
 import com.factseekerbackend.domain.user.repository.UserRepository;
@@ -38,7 +38,7 @@ public class FactCheckResultService {
             Top10VideoAnalysis top10VideoAnalysis = top10VideoAnalysisRepository.findById(dto.videoId())
                     .orElseGet(() -> Top10VideoAnalysis.builder().videoId(dto.videoId()).build())
                     .toBuilder()
-                    .status(VideoAnalysisStatus.COMPLETED)
+                    .status(AnalysisStatus.COMPLETED)
                     .videoUrl(dto.videoUrl())
                     .totalConfidenceScore(dto.videoTotalConfidenceScore())
                     .summary(dto.summary())
@@ -62,7 +62,7 @@ public class FactCheckResultService {
         Top10VideoAnalysis failedAnalysis = top10VideoAnalysisRepository.findById(videoId)
                 .orElseGet(() -> Top10VideoAnalysis.builder().videoId(videoId).build())
                 .toBuilder()
-                .status(VideoAnalysisStatus.FAILED)
+                .status(AnalysisStatus.FAILED)
                 .createdAt(LocalDateTime.now()) // Record the time of failure
                 .build();
 
@@ -84,7 +84,7 @@ public class FactCheckResultService {
                 .keywords(dto.keywords())
                 .threeLineSummary(dto.threeLineSummary())
                 .createdAt(dto.createdAt())
-                .status(VideoAnalysisStatus.COMPLETED)
+                .status(AnalysisStatus.COMPLETED)
                 .build();
     }
 
@@ -107,7 +107,7 @@ public class FactCheckResultService {
                     .threeLineSummary(dto.threeLineSummary())
                     .user(userRepository.getReferenceById(userId))
                     .createdAt(dto.createdAt())
-                    .status(VideoAnalysisStatus.COMPLETED)
+                    .status(AnalysisStatus.COMPLETED)
                     .build();
 
             videoAnalysisRepository.save(videoAnalysis);
@@ -138,7 +138,7 @@ public class FactCheckResultService {
                         .keywords(dto.keywords())
                         .threeLineSummary(dto.threeLineSummary())
                         .createdAt(dto.createdAt())
-                        .status(VideoAnalysisStatus.COMPLETED)
+                        .status(AnalysisStatus.COMPLETED)
                         .build();
                 videoAnalysisRepository.save(updated);
             });
