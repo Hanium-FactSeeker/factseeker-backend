@@ -81,20 +81,19 @@ public class PoliticianTrustAnalysisService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void analyzePoliticianTrustScore(Politician politician, LocalDate analysisDate, String analysisPeriod) {
-        // 기존 분석 결과 확인
-        PoliticianTrustScore existingScore = trustScoreRepository.findByPoliticianIdAndAnalysisDate(
-                politician.getId(), analysisDate).orElse(null);
+        // 기존 분석 결과 확인 (날짜와 관계없이 가장 최근 것)
+        PoliticianTrustScore existingScore = trustScoreRepository.findByPoliticianIdOrderByAnalysisDateDesc(
+                politician.getId()).stream().findFirst().orElse(null);
         
         if (existingScore != null) {
-            // 기존 분석이 있는 경우, 실패한 LLM만 재분석
+            // 기존 분석이 완료된 경우에만 실패한 LLM만 재분석
             if (existingScore.getAnalysisStatus() == AnalysisStatus.COMPLETED) {
                 log.info("[ANALYSIS] {} 이미 완료된 분석 존재 - 실패한 LLM만 재분석", politician.getName());
                 analyzeFailedLLMsOnly(politician, existingScore, analysisPeriod);
                 return;
-            } else if (existingScore.getAnalysisStatus() == AnalysisStatus.FAILED) {
-                log.info("[ANALYSIS] {} 기존 분석이 실패 상태 - 전체 재분석", politician.getName());
-                // 실패한 분석은 삭제하고 새로 시작
-                trustScoreRepository.delete(existingScore);
+            } else {
+                // COMPLETED가 아닌 모든 경우(FAILED, PENDING, IN_PROGRESS 등)는 기존 row 재사용
+                log.info("[ANALYSIS] {} 기존 분석이 미완료 상태 - 기존 row에 재분석", politician.getName());
             }
         }
 
@@ -120,11 +119,20 @@ public class PoliticianTrustAnalysisService {
 
             if (successfulResults.isEmpty()) {
                 // 분석 실패 시 실패 상태로 저장
-                PoliticianTrustScore trustScore = PoliticianTrustScore.builder()
-                        .politician(politician)
-                        .analysisDate(analysisDate)
-                        .analysisPeriod(analysisPeriod)
-                        .build();
+                PoliticianTrustScore trustScore;
+                if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
+                    // 기존 row 재사용
+                    trustScore = existingScore;
+                    trustScore.setAnalysisDate(analysisDate);
+                    trustScore.setAnalysisPeriod(analysisPeriod);
+                } else {
+                    // 새로운 row 생성
+                    trustScore = PoliticianTrustScore.builder()
+                            .politician(politician)
+                            .analysisDate(analysisDate)
+                            .analysisPeriod(analysisPeriod)
+                            .build();
+                }
                 trustScore.markAsFailed("모든 LLM 분석이 실패했습니다.");
                 trustScoreRepository.save(trustScore);
                 return;
@@ -177,12 +185,21 @@ public class PoliticianTrustAnalysisService {
                 int avgAccountability = totalAccountability / validCount;
                 int overallScore = (avgIntegrity + avgTransparency + avgConsistency + avgAccountability) / 4;
 
-                // 분석 결과 엔티티 생성 및 점수 설정
-                PoliticianTrustScore trustScore = PoliticianTrustScore.builder()
-                        .politician(politician)
-                        .analysisDate(analysisDate)
-                        .analysisPeriod(analysisPeriod)
-                        .build();
+                // 기존 분석 결과가 있고 COMPLETED가 아닌 경우 업데이트, 그 외에는 새로 생성
+                PoliticianTrustScore trustScore;
+                if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
+                    // 기존 결과 업데이트
+                    trustScore = existingScore;
+                    trustScore.setAnalysisDate(analysisDate);
+                    trustScore.setAnalysisPeriod(analysisPeriod);
+                } else {
+                    // 새로운 결과 생성
+                    trustScore = PoliticianTrustScore.builder()
+                            .politician(politician)
+                            .analysisDate(analysisDate)
+                            .analysisPeriod(analysisPeriod)
+                            .build();
+                }
 
                 // 점수 업데이트
                 trustScore.updateScores(overallScore, avgIntegrity, avgTransparency, avgConsistency, avgAccountability,
@@ -226,11 +243,20 @@ public class PoliticianTrustAnalysisService {
                 log.info("[ANALYSIS] {} 분석 완료 - 종합점수: {}", politician.getName(), overallScore);
             } else {
                 // 유효한 결과가 없는 경우 실패 상태로 저장
-                PoliticianTrustScore trustScore = PoliticianTrustScore.builder()
-                        .politician(politician)
-                        .analysisDate(analysisDate)
-                        .analysisPeriod(analysisPeriod)
-                        .build();
+                PoliticianTrustScore trustScore;
+                if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
+                    // 기존 row 재사용
+                    trustScore = existingScore;
+                    trustScore.setAnalysisDate(analysisDate);
+                    trustScore.setAnalysisPeriod(analysisPeriod);
+                } else {
+                    // 새로운 row 생성
+                    trustScore = PoliticianTrustScore.builder()
+                            .politician(politician)
+                            .analysisDate(analysisDate)
+                            .analysisPeriod(analysisPeriod)
+                            .build();
+                }
                 trustScore.markAsFailed("유효한 분석 결과가 없습니다.");
                 trustScoreRepository.save(trustScore);
             }
@@ -238,11 +264,20 @@ public class PoliticianTrustAnalysisService {
         } catch (Exception e) {
             log.error("[ANALYSIS] {} 분석 중 오류 발생: {}", politician.getName(), e.getMessage());
             // 오류 발생 시 실패 상태로 저장
-            PoliticianTrustScore trustScore = PoliticianTrustScore.builder()
-                    .politician(politician)
-                    .analysisDate(analysisDate)
-                    .analysisPeriod(analysisPeriod)
-                    .build();
+            PoliticianTrustScore trustScore;
+            if (existingScore != null && existingScore.getAnalysisStatus() != AnalysisStatus.COMPLETED) {
+                // 기존 row 재사용
+                trustScore = existingScore;
+                trustScore.setAnalysisDate(analysisDate);
+                trustScore.setAnalysisPeriod(analysisPeriod);
+            } else {
+                // 새로운 row 생성
+                trustScore = PoliticianTrustScore.builder()
+                        .politician(politician)
+                        .analysisDate(analysisDate)
+                        .analysisPeriod(analysisPeriod)
+                        .build();
+            }
             trustScore.markAsFailed("분석 중 오류 발생: " + e.getMessage());
             trustScoreRepository.save(trustScore);
         }

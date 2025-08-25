@@ -16,6 +16,9 @@ public interface PoliticianTrustScoreRepository extends JpaRepository<Politician
 
   Optional<PoliticianTrustScore> findByPoliticianIdAndAnalysisDate(Long politicianId, LocalDate analysisDate);
 
+  @Query("SELECT pts FROM PoliticianTrustScore pts WHERE pts.politician.id = :politicianId ORDER BY pts.analysisDate DESC")
+  List<PoliticianTrustScore> findByPoliticianIdOrderByAnalysisDateDesc(@Param("politicianId") Long politicianId);
+
   @Query("SELECT pts FROM PoliticianTrustScore pts WHERE pts.politician.id = :politicianId AND pts.analysisStatus = 'COMPLETED' ORDER BY pts.analysisDate DESC LIMIT 1")
   Optional<PoliticianTrustScore> findLatestCompletedScore(@Param("politicianId") Long politicianId);
 
