@@ -51,8 +51,8 @@ public class VideoAnalysisController {
     private final ObjectMapper om;
 
     @Operation(
-            summary = "비디오 분석 결과 조회",
-            description = "특정 비디오 분석 ID에 대한 분석 결과를 조회합니다."
+            summary = "url로 요청한 비디오 분석(리포트) 결과 조회",
+            description = "url로 요청한 특정 비디오 분석 ID에 대한 분석 결과를 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -115,7 +115,7 @@ public class VideoAnalysisController {
     }
 
     @Operation(
-            summary = "비디오 분석 요청",
+            summary = "비디오 분석(리포트) 요청",
             description = "유튜브 URL을 입력받아 비디오 분석을 요청합니다. 로그인 여부에 따라 다른 처리를 수행합니다."
     )
     @ApiResponses({
@@ -208,7 +208,7 @@ public class VideoAnalysisController {
 
     @Operation(
             summary = "Top10 특정 비디오 분석 조회",
-            description = "특정 비디오 ID의 Top10 분석 결과를 조회합니다. 데이터가 아직 준비되지 않은 경우 202(ACCEPTED)로 대기 상태를 반환합니다."
+            description = "Top10 특정 비디오 ID의 분석 결과(리포트)를 조회합니다. 데이터가 아직 준비되지 않은 경우 202(PENDING)로 대기 상태를 반환합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
