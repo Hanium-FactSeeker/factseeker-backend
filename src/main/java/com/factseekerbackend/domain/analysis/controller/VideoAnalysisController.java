@@ -236,8 +236,8 @@ public class VideoAnalysisController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 요청",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"잘못된 입력값입니다.\"\n}"))
+                    description = "잘못된 요청 (예: 분석 실패)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"분석이 실패하여 키워드를 제공할 수 없습니다.\"\n}"))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "500",
@@ -282,7 +282,7 @@ public class VideoAnalysisController {
 
     @Operation(
             summary = "Top 10 유튜브 키워드 조회",
-            description = "특정 Top 10 비디오 ID에 대한 키워드를 조회합니다."
+            description = "특정 Top 10 비디오 ID에 대한 키워드를 조회합니다. 분석 결과에 키워드가 없으면 빈 배열([])을 반환합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -291,7 +291,10 @@ public class VideoAnalysisController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = KeywordsResponse.class),
-                            examples = @ExampleObject(value = "{\n  \"keywords\": [\"정책\", \"경제\", \"토론\"]\n}")
+                            examples = {
+                                    @ExampleObject(name = "성공 예시 (키워드 있음)", value = "{\n  \"keywords\": [\"정책\", \"경제\", \"토론\"]\n}"),
+                                    @ExampleObject(name = "성공 예시 (키워드 없음)", value = "{\n  \"keywords\": []\n}")
+                            }
                     )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -309,7 +312,24 @@ public class VideoAnalysisController {
     public ResponseEntity<ApiResponse<KeywordsResponse>> getTop10YoutubeKeywords(
             @Parameter(description = "비디오 ID", example = "exampleVideoId")
             @PathVariable String videoId) {
-        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", videoAnalysisService.getTop10YoutubeKeywords(videoId)));
+        try {
+            Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND, ErrorCode.VIDEO_NOT_FOUND.getMessage()));
+
+            if (analysis.getStatus() == VideoAnalysisStatus.FAILED) {
+                return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus())
+                        .body(ApiResponse.error("분석이 실패하여 키워드를 제공할 수 없습니다."));
+            }
+
+            if (analysis.getStatus() == VideoAnalysisStatus.PENDING) {
+                return ResponseEntity.ok(ApiResponse.success("분석이 진행 중입니다.", new KeywordsResponse(java.util.List.of())));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", videoAnalysisService.getTop10YoutubeKeywords(videoId)));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getErrorCode().getStatus())
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     private Object parseClaims(String claimsJson) {

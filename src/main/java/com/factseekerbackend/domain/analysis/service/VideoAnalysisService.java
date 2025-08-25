@@ -8,6 +8,8 @@ import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
 import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus;
 import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
+import com.factseekerbackend.global.exception.BusinessException;
+import com.factseekerbackend.global.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,9 +56,12 @@ public class VideoAnalysisService {
     }
 
     public KeywordsResponse getTop10YoutubeKeywords(String videoId) {
-        return top10VideoAnalysisRepository.findById(videoId)
-                .map(KeywordsResponse::from)
-                .orElseThrow();
+        Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND, ErrorCode.VIDEO_NOT_FOUND.getMessage()));
+        if (analysis.getStatus() == VideoAnalysisStatus.FAILED) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "분석이 실패하여 키워드를 제공할 수 없습니다.");
+        }
+        return KeywordsResponse.from(analysis);
     }
 
     public boolean isInTop10(String videoId) {

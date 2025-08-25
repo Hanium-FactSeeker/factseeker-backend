@@ -11,8 +11,13 @@ public record KeywordsResponse(
         List<String> keywords
 ) {
     public static KeywordsResponse from(Top10VideoAnalysis top10VideoAnalysis) {
-        List<String> list = Arrays.stream(top10VideoAnalysis.getKeywords().trim().split(","))
+        String keywords = top10VideoAnalysis.getKeywords();
+        if (keywords == null || keywords.isBlank()) {
+            return new KeywordsResponse(List.of());
+        }
+        List<String> list = Arrays.stream(keywords.split(","))
                 .map(String::trim)
+                .filter(s -> !s.isEmpty())
                 .toList();
         return new KeywordsResponse(list);
     }
