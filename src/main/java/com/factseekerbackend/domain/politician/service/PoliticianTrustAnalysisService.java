@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class PoliticianTrustAnalysisService {
 
     private final PoliticianRepository politicianRepository;
@@ -39,7 +38,7 @@ public class PoliticianTrustAnalysisService {
     /**
      * 모든 정치인에 대한 신뢰도를 분석을 수행합니다.
      */
-    @Async
+    @Async("batchExecutor")
     public void analyzeAllPoliticians() {
         log.info("[BATCH] 정치인 신뢰도 분석 배치 시작");
         
