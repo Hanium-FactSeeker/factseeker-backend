@@ -1,7 +1,9 @@
 package com.factseekerbackend.domain.analysis.repository;
 
 
-import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

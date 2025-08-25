@@ -14,5 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HistoryService {
 
+    private final AnalysisHistoryRepository analysisHistoryRepository;
 
+    public Page<HistoryResponse> getUserHistory(User user, Pageable pageable) {
+        return analysisHistoryRepository.findByUser(user, pageable)
+                .map(HistoryResponse::from);
+    }
 }
