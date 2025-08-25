@@ -46,7 +46,7 @@ public enum ErrorCode {
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."),
 
   // TOP10 에러
-  VIDEO_NOT_FOUND(HttpStatus.BAD_REQUEST, "유효하지 않은 비디오ID 입니다.") ;
+  VIDEO_NOT_FOUND(HttpStatus.BAD_REQUEST, "유효하지 않은 비디오ID 입니다.");
   private final HttpStatus status;
   private final String message;
 }
