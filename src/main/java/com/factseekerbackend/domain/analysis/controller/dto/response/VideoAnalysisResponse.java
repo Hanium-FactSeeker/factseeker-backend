@@ -1,8 +1,8 @@
 package com.factseekerbackend.domain.analysis.controller.dto.response;
 
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
-import com.factseekerbackend.domain.analysis.entity.VideoAnalysisStatus; // Add this import
+import com.factseekerbackend.domain.analysis.entity.video.VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus; // Add this import
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,6 +13,10 @@ import java.time.LocalDateTime;
 @Builder
 @Schema(description = "비디오 분석 결과 응답")
 public class VideoAnalysisResponse {
+    private final Long videoAnalysisId;
+
+    private final String videoTitle;
+
     @Schema(description = "유튜브 비디오 ID", example = "abc123")
     private final String videoId;
 
@@ -44,7 +48,7 @@ public class VideoAnalysisResponse {
     private final LocalDateTime createdAt;
 
     @Schema(description = "분석 상태", example = "COMPLETED")
-    private final VideoAnalysisStatus status;
+    private final AnalysisStatus status;
 
     public static VideoAnalysisResponse from(VideoAnalysis videoAnalysis, Object claims) {
         return VideoAnalysisResponse.builder()
@@ -74,7 +78,16 @@ public class VideoAnalysisResponse {
                 .keywords(top10VideoAnalysis.getKeywords())
                 .threeLineSummary(top10VideoAnalysis.getThreeLineSummary())
                 .createdAt(top10VideoAnalysis.getCreatedAt())
-                .status(VideoAnalysisStatus.COMPLETED)
+                .status(AnalysisStatus.COMPLETED)
+                .build();
+    }
+
+    public static VideoAnalysisResponse from(VideoAnalysis videoAnalysis, String title) {
+
+        return VideoAnalysisResponse.builder()
+                .videoAnalysisId(videoAnalysis.getId())
+                .videoUrl(videoAnalysis.getVideoUrl())
+                .videoTitle(title)
                 .build();
     }
 }

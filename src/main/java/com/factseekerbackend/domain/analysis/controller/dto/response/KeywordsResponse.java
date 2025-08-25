@@ -1,6 +1,6 @@
 package com.factseekerbackend.domain.analysis.controller.dto.response;
 
-import com.factseekerbackend.domain.analysis.entity.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Arrays;
