@@ -1,6 +1,5 @@
 package com.factseekerbackend.domain.analysis.service;
 
-import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.*;
 import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
 import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
@@ -96,19 +95,29 @@ public class VideoAnalysisService {
             PercentStatusResponse result = new PercentStatusResponse(videoId);
 
             if (analysis != null) { // Case: Found in DB
-                if (analysis.getStatus() == AnalysisStatus.COMPLETED) {
-                    result.status(AnalysisStatus.COMPLETED).totalConfidenceScore(analysis.getTotalConfidenceScore());
+                AnalysisStatus st = analysis.getStatus();
+                if (st == AnalysisStatus.COMPLETED) {
+                    result.status(AnalysisStatus.COMPLETED)
+                            .totalConfidenceScore(analysis.getTotalConfidenceScore());
                     completed++;
-                } else { // FAILED
+                } else if (st == AnalysisStatus.PENDING) {
+                    result.status(AnalysisStatus.PENDING);
+                    pending++;
+                } else if (st == AnalysisStatus.FAILED) {
                     result.status(AnalysisStatus.FAILED);
                     failed++;
+                } else { // NOT_FOUND or others
+                    result.status(AnalysisStatus.NOT_FOUND)
+                            .message("DB 상태가 NOT_FOUND 입니다.");
+                    notFound++;
                 }
             } else { // Case: Not found in DB
                 if (validTop10Ids.contains(videoId)) {
                     result.status(AnalysisStatus.PENDING);
                     pending++;
                 } else {
-                    result.status(AnalysisStatus.NOT_FOUND).message("해당 ID는 Top 10 목록에 없습니다.");
+                    result.status(AnalysisStatus.NOT_FOUND)
+                            .message("해당 ID는 Top 10 목록에 없습니다.");
                     notFound++;
                 }
             }

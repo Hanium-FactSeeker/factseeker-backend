@@ -1,7 +1,6 @@
 package com.factseekerbackend.domain.analysis.controller;
 
 import com.factseekerbackend.domain.analysis.controller.dto.request.VideoUrlRequest;
-import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.*;
 import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
 import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
@@ -354,12 +353,20 @@ public class VideoAnalysisController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(name = "성공 예시 (COMPLETED/PENDING/FAILED 혼합)", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공(일부 불가 포함)\",\n  \"data\": {\n    \"requested\": 3,\n    \"completed\": 1,\n    \"pending\": 1,\n    \"failed\": 1,\n    \"notFound\": 0,\n    \"results\": [\n      {\n        \"videoId\": \"abc123\",\n        \"status\": \"COMPLETED\",\n        \"totalConfidenceScore\": 78\n      },\n      {\n        \"videoId\": \"def456\",\n        \"status\": \"PENDING\"\n      },\n      {\n        \"videoId\": \"ghi789\",\n        \"status\": \"FAILED\"\n      }\n    ]\n  }\n}")
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "잘못된 요청",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(name = "요청 오류 예시", value = "{\n  \"success\": false,\n  \"message\": \"videoIds 쿼리파라미터가 필요합니다.\"\n}")
+                    )
             )
     })
     @GetMapping("/top10/percents")
