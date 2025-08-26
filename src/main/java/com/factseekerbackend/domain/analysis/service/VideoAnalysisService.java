@@ -74,14 +74,13 @@ public class VideoAnalysisService {
         return ids.contains(videoId);
     }
 
-    public PercentStatusData getTop10VideosPercent(VideoIdsRequest request) {
-        List<String> requestedVideoIds = request.videoIds();
-        if (requestedVideoIds == null || requestedVideoIds.isEmpty()) {
+    public PercentStatusData getTop10VideosPercent(List<String> videoIds) {
+        if (videoIds == null || videoIds.isEmpty()) {
             return PercentStatusData.builder().requested(0).completed(0).pending(0).failed(0).notFound(0).results(Collections.emptyList()).build();
         }
 
         // 1. Bulk fetch all existing analysis records from DB in one query
-        Map<String, Top10VideoAnalysis> analysisMap = top10VideoAnalysisRepository.findAllById(requestedVideoIds)
+        Map<String, Top10VideoAnalysis> analysisMap = top10VideoAnalysisRepository.findAllById(videoIds)
                 .stream()
                 .collect(Collectors.toMap(Top10VideoAnalysis::getVideoId, analysis -> analysis));
 
@@ -92,7 +91,7 @@ public class VideoAnalysisService {
         List<PercentStatusResponse> results = new ArrayList<>();
         int completed = 0, pending = 0, failed = 0, notFound = 0;
 
-        for (String videoId : requestedVideoIds) {
+        for (String videoId : videoIds) {
             Top10VideoAnalysis analysis = analysisMap.get(videoId);
             PercentStatusResponse result = new PercentStatusResponse(videoId);
 
@@ -117,7 +116,7 @@ public class VideoAnalysisService {
         }
 
         return PercentStatusData.builder()
-                .requested(requestedVideoIds.size())
+                .requested(videoIds.size())
                 .completed(completed)
                 .pending(pending)
                 .failed(failed)

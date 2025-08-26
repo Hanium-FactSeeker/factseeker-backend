@@ -345,75 +345,31 @@ public class VideoAnalysisController {
         }
     }
 
+
     @Operation(
-            summary = "단일 비디오 진행률/상태 조회",
-            description = "특정 비디오 ID에 대한 분석 진행률 및 상태를 조회합니다."
+            summary = "복수 비디오 진행률/상태 조회",
+            description = "여러 비디오 ID를 쿼리파라미터로 전달하여 일괄 조회합니다. 예: /top10/percents?videoIds=abc123&videoIds=def456"
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(value = "{\n  \"success\": true,\n  \"message\": \"조회에 성공했습니다.\",\n  \"data\": {\n    \"requested\": 1,\n    \"completed\": 1,\n    \"pending\": 0,\n    \"failed\": 0,\n    \"notFound\": 0,\n    \"results\": [\n      {\n        \"videoId\": \"abc123\",\n        \"status\": \"COMPLETED\",\n        \"totalConfidenceScore\": 78\n      }\n    ]\n  }\n}"))
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "잘못된 요청",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"잘못된 입력값입니다.\"\n}"))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "500",
-                    description = "서버 내부 오류",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"서버 내부 오류가 발생했습니다.\"\n}"))
-            )
-    })
-    @GetMapping("/top10/{videoId}/percents")
-    public ResponseEntity<ApiResponse<PercentStatusData>> getVideoPercent(
-            @PathVariable("videoId") String videoId
-    ) {
-        VideoIdsRequest request = VideoIdsRequest.from(List.of(videoId));
-        PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(request);
-        return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", statusData));
-    }
-
-    @Operation(
-            summary = "복수 비디오 진행률/상태 조회",
-            description = "여러 비디오 ID에 대한 분석 진행률 및 상태를 일괄 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "조회 성공",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(value = "{\n  \"success\": true,\n  \"message\": \"조회 성공(일부 불가 포함)\",\n  \"data\": {\n    \"requested\": 2,\n    \"completed\": 1,\n    \"pending\": 1,\n    \"failed\": 0,\n    \"notFound\": 0,\n    \"results\": [\n      {\n        \"videoId\": \"abc123\",\n        \"status\": \"COMPLETED\",\n        \"totalConfidenceScore\": 78\n      },\n      {\n        \"videoId\": \"def456\",\n        \"status\": \"PENDING\"\n      }\n    ]\n  }\n}"))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청 (요청 본문 검증 실패 등)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"잘못된 입력값입니다.\"\n}"))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "500",
-                    description = "서버 내부 오류",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class), examples = @ExampleObject(value = "{\n  \"success\": false,\n  \"message\": \"서버 내부 오류가 발생했습니다.\"\n}"))
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiResponse.class))
             )
     })
     @GetMapping("/top10/percents")
-    public ResponseEntity<ApiResponse<PercentStatusData>> getVideosPercent(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "조회할 비디오 ID 목록",
-                    required = true,
-                    content = @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = VideoIdsRequest.class),
-                            examples = @ExampleObject(value = "{\n  \"videoIds\": [\"abc123\", \"def456\"]\n}"))
-            )
-            @RequestBody VideoIdsRequest request
+    public ResponseEntity<ApiResponse<PercentStatusData>> getVideosPercentGet(
+            @RequestParam(name = "videoIds") List<String> videoIds
     ) {
-        PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(request);
+        if (videoIds == null || videoIds.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("videoIds 쿼리파라미터가 필요합니다."));
+        }
+        PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(videoIds);
         return ResponseEntity.ok(ApiResponse.success("조회 성공(일부 불가 포함)", statusData));
     }
 
