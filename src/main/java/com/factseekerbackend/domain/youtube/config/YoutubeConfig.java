@@ -17,11 +17,7 @@ public class YoutubeConfig {
         return new YouTube.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
                 JacksonFactory.getDefaultInstance(),
-                request -> {
-                    // Set conservative timeouts to avoid long hangs during scheduler runs
-                    request.setConnectTimeout(5_000); // 5s
-                    request.setReadTimeout(8_000);    // 8s
-                }
+                null
         ).setApplicationName("fact-seeker")
                 .build();
     }
