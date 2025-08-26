@@ -4,6 +4,7 @@ package com.factseekerbackend.domain.youtube.service;
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoDto;
 import com.factseekerbackend.domain.youtube.controller.dto.response.VideoListResponse;
 import com.factseekerbackend.domain.youtube.controller.dto.response.YoutubeSearchResponse;
+import com.factseekerbackend.domain.youtube.util.YoutubePreprocessor;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.Video;
@@ -30,9 +31,10 @@ public class YoutubeSearchService implements YoutubeService {
 
     @Override
     public List<YoutubeSearchResponse> searchVideos(String query) throws IOException {
+        String sanitized = YoutubePreprocessor.sanitizeSearchQuery(query);
         YouTube.Search.List search = youTube.search().list(List.of("id","snippet"));
         search.setKey(apiKey);
-        search.setQ(query);
+        search.setQ(sanitized);
         search.setType(List.of("video"));
         search.setMaxResults(10L);
 
@@ -66,10 +68,12 @@ public class YoutubeSearchService implements YoutubeService {
 
     @Override
     public VideoDto getVideoById(String videoId) throws IOException {
+        String idOrUrl = videoId == null ? "" : videoId;
+        String normalizedId = YoutubePreprocessor.extractVideoId(idOrUrl);
         YouTube.Videos.List request = youTube.videos()
                 .list(List.of("id,snippet,statistics,contentDetails"));
         request.setKey(apiKey);
-        request.setId(List.of(videoId));
+        request.setId(List.of(normalizedId));
 
         List<Video> items = request.execute().getItems();
         if (items == null || items.isEmpty()) {

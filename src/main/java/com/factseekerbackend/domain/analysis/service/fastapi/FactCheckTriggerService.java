@@ -6,6 +6,7 @@ import com.factseekerbackend.domain.analysis.repository.VideoAnalysisRepository;
 import com.factseekerbackend.domain.analysis.service.fastapi.dto.FactCheckRequest;
 import com.factseekerbackend.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.factseekerbackend.domain.youtube.util.YoutubePreprocessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -92,7 +93,7 @@ public class FactCheckTriggerService {
                 ? videoId
                 : "https://www.youtube.com/watch?v=" + videoId;
 
-        String normalizedVideoId = extractYoutubeVideoId(videoId);
+        String normalizedVideoId = YoutubePreprocessor.extractVideoId(videoId);
         if (normalizedVideoId == null || normalizedVideoId.isBlank()) {
             normalizedVideoId = videoId;
         }
@@ -217,46 +218,5 @@ public class FactCheckTriggerService {
         return CompletableFuture.completedFuture(pending);
     }
 
-    // 다양한 YouTube URL 형태에서 videoId를 추출
-    private String extractYoutubeVideoId(String input) {
-        if (input == null || input.isBlank()) return null;
-        String s = input.trim();
-        try {
-            // 이미 순수 ID처럼 보이면 그대로 반환 (YouTube 기본 11자, 더 긴 경우도 호환)
-            if (!s.startsWith("http")) {
-                return s;
-            }
-
-            // 표준 watch URL: https://www.youtube.com/watch?v=VIDEO_ID
-            int vIdx = s.indexOf("v=");
-            if (vIdx != -1) {
-                String candidate = s.substring(vIdx + 2);
-                int amp = candidate.indexOf('&');
-                if (amp != -1) candidate = candidate.substring(0, amp);
-                return candidate;
-            }
-
-            // 짧은 URL: https://youtu.be/VIDEO_ID
-            String youtu = "youtu.be/";
-            int shortIdx = s.indexOf(youtu);
-            if (shortIdx != -1) {
-                String candidate = s.substring(shortIdx + youtu.length());
-                int q = candidate.indexOf('?');
-                if (q != -1) candidate = candidate.substring(0, q);
-                return candidate;
-            }
-
-            // Shorts: https://www.youtube.com/shorts/VIDEO_ID
-            String shorts = "/shorts/";
-            int shortsIdx = s.indexOf(shorts);
-            if (shortsIdx != -1) {
-                String candidate = s.substring(shortsIdx + shorts.length());
-                int q = candidate.indexOf('?');
-                if (q != -1) candidate = candidate.substring(0, q);
-                return candidate;
-            }
-        } catch (Exception ignored) {
-        }
-        return s; // 파싱 실패 시 원본 반환
-    }
+    // ID 정규화는 YoutubePreprocessor.extractVideoId 사용
 }
