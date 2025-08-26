@@ -1,5 +1,6 @@
 package com.factseekerbackend.domain.analysis.service;
 
+import com.factseekerbackend.domain.analysis.controller.dto.request.VideoIdsRequest;
 import com.factseekerbackend.domain.analysis.controller.dto.response.*;
 import com.factseekerbackend.domain.analysis.controller.dto.response.fastapi.ClaimDto;
 import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
@@ -73,13 +74,14 @@ public class VideoAnalysisService {
         return ids.contains(videoId);
     }
 
-    public PercentStatusData getTop10VideosPercent(List<String> videoIds) {
-        if (videoIds == null || videoIds.isEmpty()) {
+    public PercentStatusData getTop10VideosPercent(VideoIdsRequest request) {
+        List<String> requestedVideoIds = request.videoIds();
+        if (requestedVideoIds == null || requestedVideoIds.isEmpty()) {
             return PercentStatusData.builder().requested(0).completed(0).pending(0).failed(0).notFound(0).results(Collections.emptyList()).build();
         }
 
         // 1. Bulk fetch all existing analysis records from DB in one query
-        Map<String, Top10VideoAnalysis> analysisMap = top10VideoAnalysisRepository.findAllById(videoIds)
+        Map<String, Top10VideoAnalysis> analysisMap = top10VideoAnalysisRepository.findAllById(requestedVideoIds)
                 .stream()
                 .collect(Collectors.toMap(Top10VideoAnalysis::getVideoId, analysis -> analysis));
 
@@ -90,34 +92,24 @@ public class VideoAnalysisService {
         List<PercentStatusResponse> results = new ArrayList<>();
         int completed = 0, pending = 0, failed = 0, notFound = 0;
 
-        for (String videoId : videoIds) {
+        for (String videoId : requestedVideoIds) {
             Top10VideoAnalysis analysis = analysisMap.get(videoId);
             PercentStatusResponse result = new PercentStatusResponse(videoId);
 
             if (analysis != null) { // Case: Found in DB
-                AnalysisStatus st = analysis.getStatus();
-                if (st == AnalysisStatus.COMPLETED) {
-                    result.status(AnalysisStatus.COMPLETED)
-                            .totalConfidenceScore(analysis.getTotalConfidenceScore());
+                if (analysis.getStatus() == AnalysisStatus.COMPLETED) {
+                    result.status(AnalysisStatus.COMPLETED).totalConfidenceScore(analysis.getTotalConfidenceScore());
                     completed++;
-                } else if (st == AnalysisStatus.PENDING) {
-                    result.status(AnalysisStatus.PENDING);
-                    pending++;
-                } else if (st == AnalysisStatus.FAILED) {
+                } else { // FAILED
                     result.status(AnalysisStatus.FAILED);
                     failed++;
-                } else { // NOT_FOUND or others
-                    result.status(AnalysisStatus.NOT_FOUND)
-                            .message("DB 상태가 NOT_FOUND 입니다.");
-                    notFound++;
                 }
             } else { // Case: Not found in DB
                 if (validTop10Ids.contains(videoId)) {
                     result.status(AnalysisStatus.PENDING);
                     pending++;
                 } else {
-                    result.status(AnalysisStatus.NOT_FOUND)
-                            .message("해당 ID는 Top 10 목록에 없습니다.");
+                    result.status(AnalysisStatus.NOT_FOUND).message("해당 ID는 Top 10 목록에 없습니다.");
                     notFound++;
                 }
             }
@@ -125,7 +117,7 @@ public class VideoAnalysisService {
         }
 
         return PercentStatusData.builder()
-                .requested(videoIds.size())
+                .requested(requestedVideoIds.size())
                 .completed(completed)
                 .pending(pending)
                 .failed(failed)
