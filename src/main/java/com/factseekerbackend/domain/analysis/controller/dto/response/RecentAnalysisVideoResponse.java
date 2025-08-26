@@ -20,4 +20,5 @@ public class RecentAnalysisVideoResponse {
                 .videoTitle(title)
                 .build();
     }
+
 }
