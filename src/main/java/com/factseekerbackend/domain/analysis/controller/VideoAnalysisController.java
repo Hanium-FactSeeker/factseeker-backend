@@ -347,7 +347,7 @@ public class VideoAnalysisController {
 
     @Operation(
             summary = "복수 비디오 진행률/상태 조회",
-            description = "여러 비디오 ID를 쿼리파라미터로 전달하여 일괄 조회합니다. 예: /top10/percents?videoIds=abc123&videoIds=def456"
+            description = "여러 비디오 ID를 쿼리파라미터로 전달하여 일괄 조회합니다. 파라미터 미제공 시 빈 집계를 반환합니다. 예: /top10/percents?videoIds=abc123&videoIds=def456"
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -358,24 +358,12 @@ public class VideoAnalysisController {
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(name = "성공 예시 (COMPLETED/PENDING/FAILED 혼합)", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공(일부 불가 포함)\",\n  \"data\": {\n    \"requested\": 3,\n    \"completed\": 1,\n    \"pending\": 1,\n    \"failed\": 1,\n    \"notFound\": 0,\n    \"results\": [\n      {\n        \"videoId\": \"abc123\",\n        \"status\": \"COMPLETED\",\n        \"totalConfidenceScore\": 78\n      },\n      {\n        \"videoId\": \"def456\",\n        \"status\": \"PENDING\"\n      },\n      {\n        \"videoId\": \"ghi789\",\n        \"status\": \"FAILED\"\n      }\n    ]\n  }\n}")
                     )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(name = "요청 오류 예시", value = "{\n  \"success\": false,\n  \"message\": \"videoIds 쿼리파라미터가 필요합니다.\"\n}")
-                    )
             )
     })
     @GetMapping("/top10/percents")
     public ResponseEntity<ApiResponse<PercentStatusData>> getVideosPercentGet(
-            @RequestParam(name = "videoIds") List<String> videoIds
+            @RequestParam(name = "videoIds", required = false) List<String> videoIds
     ) {
-        if (videoIds == null || videoIds.isEmpty()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("videoIds 쿼리파라미터가 필요합니다."));
-        }
         PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(videoIds);
         return ResponseEntity.ok(ApiResponse.success("조회 성공(일부 불가 포함)", statusData));
     }
