@@ -1,5 +1,6 @@
 package com.factseekerbackend.domain.youtube.controller.dto.response;
 
+import com.factseekerbackend.domain.youtube.util.YoutubePreprocessor;
 import com.google.api.services.youtube.model.SearchResult;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -26,18 +27,29 @@ public class YoutubeSearchResponse {
     public static YoutubeSearchResponse from(SearchResult searchResult) {
         String thumbnailUrl = null;
         if (searchResult.getSnippet() != null && searchResult.getSnippet().getThumbnails() != null) {
-            if (searchResult.getSnippet().getThumbnails().getHigh() != null) {
+            if (searchResult.getSnippet().getThumbnails().getMaxres() != null) {
+                thumbnailUrl = searchResult.getSnippet().getThumbnails().getMaxres().getUrl();
+            } else if (searchResult.getSnippet().getThumbnails().getHigh() != null) {
                 thumbnailUrl = searchResult.getSnippet().getThumbnails().getHigh().getUrl();
+            } else if (searchResult.getSnippet().getThumbnails().getMedium() != null) {
+                thumbnailUrl = searchResult.getSnippet().getThumbnails().getMedium().getUrl();
             } else if (searchResult.getSnippet().getThumbnails().getDefault() != null) {
                 thumbnailUrl = searchResult.getSnippet().getThumbnails().getDefault().getUrl();
             }
         }
 
+        String title = searchResult.getSnippet() != null ?
+                YoutubePreprocessor.sanitizeDisplayText(searchResult.getSnippet().getTitle()) : "";
+
+        String publishedAt = searchResult.getSnippet() != null && searchResult.getSnippet().getPublishedAt() != null
+                ? searchResult.getSnippet().getPublishedAt().toString()
+                : null;
+
         return YoutubeSearchResponse.builder()
                 .url("https://www.youtube.com/watch?v=" + searchResult.getId().getVideoId())
-                .videoTitle(searchResult.getSnippet().getTitle())
+                .videoTitle(title)
                 .thumbnailUrl(thumbnailUrl)
-                .updatedAt(searchResult.getSnippet().getPublishedAt().toString())
+                .updatedAt(publishedAt)
                 .build();
     }
 }
