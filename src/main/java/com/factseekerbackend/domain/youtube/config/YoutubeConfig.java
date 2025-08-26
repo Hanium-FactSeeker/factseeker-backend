@@ -17,7 +17,11 @@ public class YoutubeConfig {
         return new YouTube.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
                 JacksonFactory.getDefaultInstance(),
-                null
+                request -> {
+                    // 보수적 타임아웃 설정: 스케줄러에서 오래 걸리는 요청 방지
+                    request.setConnectTimeout(5_000); // 5s
+                    request.setReadTimeout(8_000);    // 8s
+                }
         ).setApplicationName("fact-seeker")
                 .build();
     }
