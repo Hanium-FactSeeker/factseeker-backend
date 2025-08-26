@@ -9,6 +9,7 @@ import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.Video;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -51,19 +53,44 @@ public class YoutubeSearchService implements YoutubeService {
     }
 
     private List<VideoDto> getPopularPoliticsTop10(long size) throws IOException {
-        YouTube.Videos.List request = youTube.videos()
-                .list(List.of("id,snippet,statistics,contentDetails"));
+        IOException last = null;
+        long backoffMs = 200L;
+        int maxAttempts = 3;
 
-        request.setKey(apiKey);
-        request.setChart("mostPopular");
-        request.setRegionCode("KR");
-        request.setVideoCategoryId("25"); // 뉴스/정치
-        request.setMaxResults(size);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                YouTube.Videos.List request = youTube.videos()
+                        .list(List.of("id,snippet,statistics,contentDetails"));
 
-        List<Video> items = request.execute().getItems();
-        return items.stream()
-                .map(VideoDto::from)
-                .toList();
+                request.setKey(apiKey);
+                request.setChart("mostPopular");
+                request.setRegionCode("KR");
+                request.setVideoCategoryId("25"); // 뉴스/정치
+                request.setMaxResults(size);
+
+                List<Video> items = request.execute().getItems();
+                if (items == null || items.isEmpty()) {
+                    log.warn("YouTube returned empty popular list (attempt {}/{})", attempt, maxAttempts);
+                    if (attempt == maxAttempts) return List.of();
+                } else {
+                    return items.stream().map(VideoDto::from).toList();
+                }
+            } catch (IOException e) {
+                last = e;
+                log.warn("YouTube API error on popular fetch (attempt {}/{}): {}", attempt, maxAttempts, e.toString());
+            }
+
+            try {
+                Thread.sleep(backoffMs);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            backoffMs *= 2;
+        }
+
+        if (last != null) throw last;
+        return List.of();
     }
 
     @Override
