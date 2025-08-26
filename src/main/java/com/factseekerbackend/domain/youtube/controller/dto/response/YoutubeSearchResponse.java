@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.factseekerbackend.global.util.TextSanitizer;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,7 +36,7 @@ public class YoutubeSearchResponse {
 
         return YoutubeSearchResponse.builder()
                 .url("https://www.youtube.com/watch?v=" + searchResult.getId().getVideoId())
-                .videoTitle(searchResult.getSnippet().getTitle())
+                .videoTitle(TextSanitizer.sanitizeTitle(searchResult.getSnippet().getTitle()))
                 .thumbnailUrl(thumbnailUrl)
                 .updatedAt(searchResult.getSnippet().getPublishedAt().toString())
                 .build();

@@ -2,6 +2,7 @@ package com.factseekerbackend.domain.youtube.controller.dto.response;
 
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
+import com.factseekerbackend.global.util.TextSanitizer;
 
 import java.util.Objects;
 
@@ -11,7 +12,8 @@ public record VideoDto(String videoId, String videoTitle, String thumbnailUrl, S
         VideoSnippet snippet = video.getSnippet();
 
         String id = video.getId();
-        String title = (snippet != null && snippet.getTitle() != null) ? snippet.getTitle() : "";
+        String rawTitle = (snippet != null && snippet.getTitle() != null) ? snippet.getTitle() : "";
+        String title = TextSanitizer.sanitizeTitle(rawTitle);
 
         String thumbnailUrl = null;
         if (snippet != null && snippet.getThumbnails() != null && snippet.getThumbnails().getHigh() != null) {
