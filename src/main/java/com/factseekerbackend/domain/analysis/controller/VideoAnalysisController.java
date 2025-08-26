@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.enums.ParameterStyle;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -356,12 +358,15 @@ public class VideoAnalysisController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(name = "성공 예시 (COMPLETED/PENDING/FAILED 혼합)", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공(일부 불가 포함)\",\n  \"data\": {\n    \"requested\": 3,\n    \"completed\": 1,\n    \"pending\": 1,\n    \"failed\": 1,\n    \"notFound\": 0,\n    \"results\": [\n      {\n        \"videoId\": \"abc123\",\n        \"status\": \"COMPLETED\",\n        \"totalConfidenceScore\": 78\n      },\n      {\n        \"videoId\": \"def456\",\n        \"status\": \"PENDING\"\n      },\n      {\n        \"videoId\": \"ghi789\",\n        \"status\": \"FAILED\"\n      }\n    ]\n  }\n}")
+                            examples = {@ExampleObject(name = "성공 예시 (COMPLETED/PENDING/FAILED 혼합)", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공(일부 불가 포함)\",\n  \"data\": {\n    \"requested\": 3,\n    \"completed\": 1,\n    \"pending\": 1,\n    \"failed\": 1,\n    \"notFound\": 0,\n    \"results\": [\n      {\n        \"videoId\": \"abc123\",\n        \"status\": \"COMPLETED\",\n        \"totalConfidenceScore\": 78\n      },\n      {\n        \"videoId\": \"def456\",\n        \"status\": \"PENDING\"\n      },\n      {\n        \"videoId\": \"ghi789\",\n        \"status\": \"FAILED\"\n      }\n    ]\n  }\n}"), @ExampleObject(name = "빈 입력 예시", value = "{\n  \"success\": true,\n  \"message\": \"조회 성공(일부 불가 포함)\",\n  \"data\": {\n    \"requested\": 0,\n    \"completed\": 0,\n    \"pending\": 0,\n    \"failed\": 0,\n    \"notFound\": 0,\n    \"results\": []\n  }\n}")}
                     )
             )
     })
     @GetMapping("/top10/percents")
     public ResponseEntity<ApiResponse<PercentStatusData>> getVideosPercentGet(
+            @Parameter(description = "조회할 비디오 ID (여러 번 전달 가능)",
+                    array = @ArraySchema(schema = @Schema(type = "string")),
+                    style = ParameterStyle.FORM)
             @RequestParam(name = "videoIds", required = false) List<String> videoIds
     ) {
         PercentStatusData statusData = videoAnalysisService.getTop10VideosPercent(videoIds);
