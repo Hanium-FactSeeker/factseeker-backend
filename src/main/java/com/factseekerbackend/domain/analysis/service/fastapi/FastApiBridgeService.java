@@ -1,5 +1,8 @@
 package com.factseekerbackend.domain.analysis.service.fastapi;
 
+import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
+import com.factseekerbackend.domain.analysis.entity.video.Top10VideoAnalysis;
+import com.factseekerbackend.domain.analysis.repository.Top10VideoAnalysisRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +30,7 @@ public class FastApiBridgeService {
 
     private final FactCheckTriggerService triggerService;      // FastAPI 호출 → RDS 저장
     private final RedisTemplate<String, Object> cacheRedis;    // Redis 읽기용
+    private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
 
     @Qualifier("factApiExecutor")
     private final Executor factApiExecutor;                    // 전용 스레드풀 (동시성 3)
@@ -37,7 +42,7 @@ public class FastApiBridgeService {
     /**
      * 스케줄 B: 매 시 정각 + 10초에 FastAPI 호출 시작
      */
-    //@Scheduled(cron = "10 0 * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "10 0 * * * *", zone = "Asia/Seoul")
     public void callFastApiForTop10() {
         String tag = OffsetDateTime.now(KST).format(LOCK_FMT);
 
@@ -62,6 +67,30 @@ public class FastApiBridgeService {
                 return;
             }
             log.info("대상 {}건: {}", videoIds.size(), videoIds);
+
+            // PENDING 상태로 Top10VideoAnalysis 레코드 미리 생성/업데이트
+            for (String videoId : videoIds) {
+                top10VideoAnalysisRepository.findById(videoId).ifPresentOrElse(
+                    analysis -> {
+                        // 이미 존재하는 경우, PENDING이 아니면 업데이트 (재분석 필요 시)
+                        if (analysis.getStatus() != AnalysisStatus.PENDING) {
+                            top10VideoAnalysisRepository.save(analysis.toBuilder()
+                                .status(AnalysisStatus.PENDING)
+                                .createdAt(LocalDateTime.now()) // 생성 시간 업데이트
+                                .build());
+                        }
+                    },
+                    () -> {
+                        // 존재하지 않는 경우, 새로 생성
+                        top10VideoAnalysisRepository.save(Top10VideoAnalysis.builder()
+                            .videoId(videoId)
+                            .status(AnalysisStatus.PENDING)
+                            .createdAt(LocalDateTime.now())
+                            .build());
+                    }
+                );
+            }
+            log.info("Top10VideoAnalysis PENDING 상태로 {}건 미리 생성/업데이트 완료.", videoIds.size());
 
             // 전용 스레드풀로 동시 실행(풀 설정이 동시 3개로 제한)
             List<CompletableFuture<Void>> futures = new ArrayList<CompletableFuture<Void>>(videoIds.size());
