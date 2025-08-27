@@ -56,7 +56,6 @@ public class YoutubeSearchService implements YoutubeService {
         request.setChart("mostPopular");
         request.setRegionCode("KR");
         request.setVideoCategoryId("25"); // 뉴스/정치
-        request.setVideoDuration("medium"); // 쇼츠 제외 (4분 이상)
         request.setMaxResults(size);
 
         List<Video> items = request.execute().getItems();
