@@ -15,6 +15,4 @@ public interface PoliticianRepository extends JpaRepository<Politician, Long> {
     // 백업: 부분 일치 전체
     List<Politician> findByNameContainingIgnoreCase(String name);
 
-    // 추가: SNS username이 포함된 X URL로 politician 조회
-    Optional<Politician> findByXUrlContaining(String username);
 }
