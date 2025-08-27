@@ -317,13 +317,17 @@ public class VideoAnalysisController {
             Top10VideoAnalysis analysis = top10VideoAnalysisRepository.findById(videoId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_NOT_FOUND, ErrorCode.VIDEO_NOT_FOUND.getMessage()));
 
+            if (analysis.getStatus() == AnalysisStatus.NOT_FOUND) {
+                throw new BusinessException(ErrorCode.VIDEO_NOT_FOUND, ErrorCode.VIDEO_NOT_FOUND.getMessage());
+            }
+
             if (analysis.getStatus() == AnalysisStatus.FAILED) {
                 return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus())
                         .body(ApiResponse.error("분석이 실패하여 키워드를 제공할 수 없습니다."));
             }
 
             if (analysis.getStatus() == AnalysisStatus.PENDING) {
-                return ResponseEntity.ok(ApiResponse.success("분석이 진행 중입니다.", new KeywordsResponse(java.util.List.of())));
+                return ResponseEntity.ok(ApiResponse.success("분석이 진행 중입니다.", videoAnalysisService.getTop10YoutubeKeywords(videoId)));
             }
 
             return ResponseEntity.ok(ApiResponse.success("조회에 성공했습니다.", videoAnalysisService.getTop10YoutubeKeywords(videoId)));
