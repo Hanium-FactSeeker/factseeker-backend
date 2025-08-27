@@ -2,7 +2,8 @@ name: Run Apify Tasks Every 5 Minutes
 
 on:
   schedule:
-    - cron: '0 */2 * * *'  # 매 2시간 정각
+    - cron: '*/3 * * * *'  # 매 3분 테스트용
+    #- cron: '0 */2 * * *'  # 매 2시간 정각
   workflow_dispatch:       # 수동 실행도 가능하게
 
 jobs:
