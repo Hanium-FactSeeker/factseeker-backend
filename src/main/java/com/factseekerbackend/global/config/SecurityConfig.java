@@ -106,7 +106,7 @@ public class SecurityConfig {
     CorsConfiguration configuration = new CorsConfiguration();
     configuration.setAllowedOriginPatterns(
         Arrays.asList(clientUrl, "http://localhost:3000", "https://fact-seeker.com",
-            "https://prod.fact-seeker.com")); // React 개발 서버 + Swagger
+            "https://prod.fact-seeker.com", "https://www.fact-seeker.com", "https://www.factseeker-frontend.vercel.app", "https://factseeker-frontend.vercel.app")); // React 개발 서버 + Swagger
     configuration.setAllowedMethods(
         Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("*"));
