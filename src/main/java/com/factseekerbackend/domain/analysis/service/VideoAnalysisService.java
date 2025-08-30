@@ -155,8 +155,7 @@ public class VideoAnalysisService {
             if (o instanceof byte[]) {
                 String id = cacheRedis.getStringSerializer().deserialize((byte[]) o);
                 if (id != null && !id.isBlank()) out.add(id);
-            } else if (o instanceof String) {
-                String s = (String) o;
+            } else if (o instanceof String s) {
                 if (!s.isBlank()) out.add(s);
             }
         }

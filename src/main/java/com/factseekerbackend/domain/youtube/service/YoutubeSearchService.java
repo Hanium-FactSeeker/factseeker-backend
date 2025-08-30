@@ -90,6 +90,6 @@ public class YoutubeSearchService implements YoutubeService {
         if (items == null || items.isEmpty()) {
             return null;
         }
-        return VideoDto.from(items.get(0));
+        return VideoDto.from(items.getFirst());
     }
 }
