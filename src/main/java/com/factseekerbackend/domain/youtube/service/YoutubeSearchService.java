@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -34,6 +35,8 @@ public class YoutubeSearchService implements YoutubeService {
         search.setKey(apiKey);
         search.setQ(query);
         search.setType(List.of("video"));
+        search.setOrder("date");
+        search.setVideoCategoryId("25");
         search.setMaxResults(10L);
 
         SearchListResponse response = search.execute();
@@ -44,11 +47,11 @@ public class YoutubeSearchService implements YoutubeService {
 
     @Override
     public VideoListResponse getPopularPoliticsTop10Resp(long size) throws IOException {
-        List<VideoDto> data = getPopularPoliticsTop10(size);
+        List<VideoDto> data = getPopularPolitics(size);
         return VideoListResponse.from(data, OffsetDateTime.now(ZoneId.of("Asia/Seoul")).toString());
     }
 
-    private List<VideoDto> getPopularPoliticsTop10(long size) throws IOException {
+    private List<VideoDto> getPopularPolitics(long size) throws IOException {
         YouTube.Videos.List request = youTube.videos()
                 .list(List.of("id,snippet,statistics,contentDetails"));
 
@@ -56,12 +59,26 @@ public class YoutubeSearchService implements YoutubeService {
         request.setChart("mostPopular");
         request.setRegionCode("KR");
         request.setVideoCategoryId("25"); // 뉴스/정치
-        request.setMaxResults(size);
+        request.setMaxResults(50L);
 
         List<Video> items = request.execute().getItems();
         return items.stream()
+                .filter(v -> getDurationSecondsSafe(v) >= 181)
+                .limit(size)
                 .map(VideoDto::from)
                 .toList();
+    }
+
+    private long getDurationSecondsSafe(Video video) {
+        try {
+            if (video == null || video.getContentDetails() == null || video.getContentDetails().getDuration() == null) {
+                return -1;
+            }
+            return Duration.parse(video.getContentDetails().getDuration()).getSeconds();
+        } catch (Exception e) {
+            // 파싱 실패 시 제외
+            return -1;
+        }
     }
 
     @Override
@@ -75,6 +92,6 @@ public class YoutubeSearchService implements YoutubeService {
         if (items == null || items.isEmpty()) {
             return null;
         }
-        return VideoDto.from(items.get(0));
+        return VideoDto.from(items.getFirst());
     }
 }

@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 public class FastApiBridgeService {
 
     private final FactCheckTriggerService triggerService;      // FastAPI 호출 → RDS 저장
+    @Qualifier("cacheRedisTemplate")
     private final RedisTemplate<String, Object> cacheRedis;    // Redis 읽기용
     private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
 
@@ -40,9 +41,10 @@ public class FastApiBridgeService {
     private static final DateTimeFormatter LOCK_FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
     /**
-     * 스케줄 B: 매 시 정각 + 10초에 FastAPI 호출 시작
+     * 스케줄 B: 매 6시간 간격 정각 + 10초에 FastAPI 호출 시작
      */
-    @Scheduled(cron = "10 0 0 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "10 0 0/6 * * *", zone = "Asia/Seoul")
+
     public void callFastApiForTop10() {
         String tag = OffsetDateTime.now(KST).format(LOCK_FMT);
 

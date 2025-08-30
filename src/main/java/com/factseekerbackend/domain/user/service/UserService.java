@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -45,10 +44,8 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
-  @Qualifier("cacheRedisTemplate")
   private final RedisTemplate<String, Object> redisTemplate;
   private final EmailService emailService;
-  @Qualifier("cacheStringRedisTemplate")
   private final StringRedisTemplate stringRedisTemplate;
 
   private static final String RATE_LIMIT_PREFIX = "rate_limit:";
