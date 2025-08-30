@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 public class FastApiBridgeService {
 
     private final FactCheckTriggerService triggerService;      // FastAPI 호출 → RDS 저장
+    @Qualifier("cacheRedisTemplate")
     private final RedisTemplate<String, Object> cacheRedis;    // Redis 읽기용
     private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
 
