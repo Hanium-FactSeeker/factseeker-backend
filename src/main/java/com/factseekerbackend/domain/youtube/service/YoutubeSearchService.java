@@ -36,6 +36,7 @@ public class YoutubeSearchService implements YoutubeService {
         search.setQ(query);
         search.setType(List.of("video"));
         search.setOrder("date");
+        search.setVideoCategoryId("25");
         search.setMaxResults(10L);
 
         SearchListResponse response = search.execute();
