@@ -16,6 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class VideoAnalysisService {
 
     private final VideoAnalysisRepository repository;
     private final Top10VideoAnalysisRepository top10VideoAnalysisRepository;
+    @Qualifier("cacheRedisTemplate")
     private final RedisTemplate<String, Object> cacheRedis;
     private final ObjectMapper om;
     private final YoutubeService youtubeService;
