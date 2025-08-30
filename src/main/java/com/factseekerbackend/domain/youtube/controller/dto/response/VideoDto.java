@@ -4,14 +4,12 @@ import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoSnippet;
 import com.factseekerbackend.global.util.TextSanitizer;
 
-import java.util.Objects;
-
 public record VideoDto(String videoId, String videoTitle, String thumbnailUrl, String channelId, String channelTitle) {
 
     public static VideoDto from(Video video) {
-        VideoSnippet snippet = video.getSnippet();
+        VideoSnippet snippet = video != null ? video.getSnippet() : null;
 
-        String id = video.getId();
+        String id = video != null && video.getId() != null ? video.getId() : "";
         String rawTitle = (snippet != null && snippet.getTitle() != null) ? snippet.getTitle() : "";
         String title = TextSanitizer.sanitizeTitle(rawTitle);
 
@@ -21,9 +19,10 @@ public record VideoDto(String videoId, String videoTitle, String thumbnailUrl, S
         } else if (snippet != null && snippet.getThumbnails() != null && snippet.getThumbnails().getDefault() != null) {
             thumbnailUrl = snippet.getThumbnails().getDefault().getUrl();
         }
-        String channelId = video.getSnippet() != null ? video.getSnippet().getChannelId() : null;
-        String channelTitle = Objects.requireNonNull(video.getSnippet()).getChannelTitle();
 
-        return new VideoDto(id, title, thumbnailUrl,channelId,channelTitle);
+        String channelId = (snippet != null && snippet.getChannelId() != null) ? snippet.getChannelId() : "";
+        String channelTitle = (snippet != null && snippet.getChannelTitle() != null) ? snippet.getChannelTitle() : "";
+
+        return new VideoDto(id, title, thumbnailUrl, channelId, channelTitle);
     }
 }
