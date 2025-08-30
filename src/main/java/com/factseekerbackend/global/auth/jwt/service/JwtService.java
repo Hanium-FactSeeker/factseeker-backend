@@ -35,8 +35,6 @@ public class JwtService {
   @Lazy
   private final CustomUserDetailsService customUserDetailsService;
   private final RedisTemplate<String, Object> redisTemplate;
-  @Qualifier("cacheRedisTemplate")
-  private final RedisTemplate<String, Object> cacheRedisTemplate;
   private final JwtTokenProvider jwtTokenProvider;
   private final UserRepository userRepository;
 
@@ -48,7 +46,7 @@ public class JwtService {
 
   // 소셜 로그인 임시 토큰 검증
   public SocialUserInfoResponse verifySocialToken(String tempToken) {
-    Object socialInfoObject = cacheRedisTemplate.opsForValue()
+    Object socialInfoObject = redisTemplate.opsForValue()
         .get("social_temp:" + tempToken);
 
     if (socialInfoObject == null) {

@@ -45,10 +45,8 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
-  @Qualifier("cacheRedisTemplate")
   private final RedisTemplate<String, Object> redisTemplate;
   private final EmailService emailService;
-  @Qualifier("cacheStringRedisTemplate")
   private final StringRedisTemplate stringRedisTemplate;
 
   private static final String RATE_LIMIT_PREFIX = "rate_limit:";
