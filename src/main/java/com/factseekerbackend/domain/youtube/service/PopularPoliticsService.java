@@ -104,12 +104,12 @@ public class PopularPoliticsService {
             String key = rankKey(rank);
 
             Map<String, Object> videoMap = Map.of(
-                    "videoId", video.videoId(),
-                    "videoTitle", video.videoTitle(),
+                    "videoId", video.videoId() != null ? video.videoId() : "",
+                    "videoTitle", video.videoTitle() != null ? video.videoTitle() : "",
                     "thumbnailUrl", video.thumbnailUrl() != null ? video.thumbnailUrl() : "",
-                    "updatedAt", fetchedDto.timestamp(),
-                    "channelId", video.channelId(),
-                    "channelTitle", video.channelTitle()
+                    "updatedAt", fetchedDto.timestamp() != null ? fetchedDto.timestamp() : nowSeoul(),
+                    "channelId", video.channelId() != null ? video.channelId() : "",
+                    "channelTitle", video.channelTitle() != null ? video.channelTitle() : ""
             );
 
             hashOps.putAll(key, videoMap);
