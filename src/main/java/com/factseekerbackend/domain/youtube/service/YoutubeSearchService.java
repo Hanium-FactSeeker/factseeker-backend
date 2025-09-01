@@ -63,7 +63,7 @@ public class YoutubeSearchService implements YoutubeService {
 
         List<Video> items = request.execute().getItems();
         return items.stream()
-                .filter(v -> getDurationSecondsSafe(v) >= 181)
+                .filter(v -> getDurationSecondsSafe(v) >= 91)
                 .limit(size)
                 .map(VideoDto::from)
                 .toList();
