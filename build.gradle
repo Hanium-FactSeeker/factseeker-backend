@@ -59,6 +59,9 @@ dependencies {
     // Swagger/OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
 
+    //OPENAI JAVA SDK
+    implementation "com.openai:openai-java-spring-boot-starter:3.1.2"
+
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
