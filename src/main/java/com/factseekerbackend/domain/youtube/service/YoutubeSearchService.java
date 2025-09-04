@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class YoutubeSearchService implements YoutubeService {
 
     private final YouTube youTube;
+    private final OpenAiTitleFilterService filterService;
 
     @Value("${youtube.api.key}")
     private String apiKey;
@@ -58,15 +59,41 @@ public class YoutubeSearchService implements YoutubeService {
         request.setKey(apiKey);
         request.setChart("mostPopular");
         request.setRegionCode("KR");
-        request.setVideoCategoryId("25"); // 뉴스/정치
+        request.setVideoCategoryId("25");// 뉴스/정치
         request.setMaxResults(50L);
 
         List<Video> items = request.execute().getItems();
-        return items.stream()
-                .filter(v -> getDurationSecondsSafe(v) >= 31)
-                .limit(size)
+
+        // 1) 길이 조건 필터 + DTO 변환
+        List<VideoDto> dtos = items.stream()
+                .filter(v -> getDurationSecondsSafe(v) >= 31 && getDurationSecondsSafe(v) <= 1200)
                 .map(VideoDto::from)
                 .toList();
+
+        // 2) OpenAI 배치 분류로 필터링 적용
+        return classifyAndFilter(dtos, size);
+    }
+
+    // 제목 배치 분류 후 결과 적용을 담당하는 헬퍼
+    private List<VideoDto> classifyAndFilter(List<VideoDto> dtos, long size) {
+        if (dtos == null || dtos.isEmpty()) return List.of();
+
+        List<String> titles = dtos.stream().map(VideoDto::videoTitle).toList();
+        List<Boolean> keep = filterService.arePoliticalTitles(titles);
+
+        if (keep == null || keep.isEmpty()) {
+            // 분류 실패 시, 길이 필터만 반영된 원본에서 상위 size 반환
+            return dtos.stream().limit(size).toList();
+        }
+
+        java.util.ArrayList<VideoDto> out = new java.util.ArrayList<>((int) Math.min(size, dtos.size()));
+        for (int i = 0; i < dtos.size(); i++) {
+            if (i < keep.size() && Boolean.TRUE.equals(keep.get(i))) {
+                out.add(dtos.get(i));
+                if (out.size() >= size) break;
+            }
+        }
+        return out;
     }
 
     private long getDurationSecondsSafe(Video video) {
