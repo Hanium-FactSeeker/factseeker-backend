@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import com.factseekerbackend.domain.analysis.entity.AnalysisStatus;
 
@@ -83,7 +82,7 @@ public class FactCheckTriggerService {
     }
 
     /**
-     * 사용자: 즉시 PENDING 레코드를 만들고 ID를 반환한 뒤,
+     * 로그인 사용자: 즉시 PENDING 레코드를 만들고 ID를 반환한 뒤,
      * 비동기로 FastAPI 호출 및 결과 업데이트 진행.
      */
     public Long triggerAndReturnId(String videoId, Long userId) {
@@ -101,24 +100,19 @@ public class FactCheckTriggerService {
         VideoAnalysis pending = VideoAnalysis.builder()
                 .videoId(normalizedVideoId)
                 .videoUrl(youtubeUrl)
-                .user(Optional.ofNullable(userId)
-                        .flatMap(userRepository::findById)
-                        .orElse(null))
+                .user(userRepository.findById(userId).orElse(null))
                 .status(AnalysisStatus.PENDING)
                 .build();
         pending = videoAnalysisRepository.save(pending);
 
-
         // 비동기 처리 시작
-        processFactCheck(pending.getId(), normalizedVideoId, youtubeUrl);
+        processFactCheck(pending.getId(), normalizedVideoId, youtubeUrl, userId);
 
         return pending.getId();
     }
 
-
-
     @Async("factCheckExecutor")
-    public void processFactCheck(Long videoAnalysisId, String normalizedVideoId, String youtubeUrl) {
+    public void processFactCheck(Long videoAnalysisId, String normalizedVideoId, String youtubeUrl, Long userId) {
         int maxAttempts = 3;
         long backoffMs = 200L;
 
@@ -163,6 +157,65 @@ public class FactCheckTriggerService {
         }
     }
 
+    @Async("factCheckExecutor")
+    public CompletableFuture<VideoAnalysisResponse> triggerSingleToRdsToNotLogin(String videoId) {
+
+        if (videoId == null || videoId.isBlank()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        // videoId만 들어오면 전체 URL로 변환
+        String youtubeUrl = videoId.startsWith("http")
+                ? videoId
+                : "https://www.youtube.com/watch?v=" + videoId;
+
+        // 초기 응답 상태만 표현
+        VideoAnalysisResponse pending = VideoAnalysisResponse.builder()
+                .videoId(videoId)
+                .status(AnalysisStatus.PENDING)
+                .build();
+
+        int maxAttempts = 3;
+        long backoffMs = 200L;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                String requestJson = om.writeValueAsString(new FactCheckRequest(youtubeUrl));
+                String response = fastApiClient.post()
+                        .uri("/fact-check")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("X-Idempotency-Key", videoId)
+                        .header("X-Requested-By", "spring-cron")
+                        .body(requestJson)
+                        .retrieve()
+                        .body(String.class);
+
+                VideoAnalysisResponse dto = resultService.buildResponseFromFastApiNotLogin(response);
+                return CompletableFuture.completedFuture(dto);
+
+            } catch (Exception e) {
+                log.warn("FastAPI 처리 실패 videoId={} (attempt {}/{}): {}",
+                        videoId, attempt, maxAttempts, e.toString());
+                pending = VideoAnalysisResponse.builder()
+                        .videoId(videoId)
+                        .status(AnalysisStatus.FAILED)
+                        .build();
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+                backoffMs *= 2;
+            }
+        }
+        log.error("최대 재시도 횟수(" + maxAttempts + "회)를 초과했습니다. videoId: " + videoId);
+        pending = VideoAnalysisResponse.builder()
+                .videoId(videoId)
+                .status(AnalysisStatus.FAILED)
+                .build();
+        return CompletableFuture.completedFuture(pending);
+    }
 
     // 다양한 YouTube URL 형태에서 videoId를 추출
     private String extractYoutubeVideoId(String input) {
