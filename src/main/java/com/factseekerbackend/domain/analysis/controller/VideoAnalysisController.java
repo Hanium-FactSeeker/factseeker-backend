@@ -167,33 +167,25 @@ public class VideoAnalysisController {
         log.info("[API] 비디오 분석 요청: {}", videoUrlRequest.youtubeUrl());
         String youtubeUrl = videoUrlRequest.youtubeUrl();
         try {
-            if (userDetails != null) {
-                Long userId = userDetails.getId();
-                log.info("[API] 로그인 사용자 분석 요청 - User ID: {}", userId);
-                Long analysisId = factCheckTriggerService.triggerAndReturnId(youtubeUrl, userId);
-                return CompletableFuture.completedFuture(
-                        ResponseEntity.ok(
-                                ApiResponse.success(
-                                        "비디오 분석이 성공적으로 요청되었습니다.",
-                                        new AnalysisStartResponse(analysisId, AnalysisStatus.PENDING)
-                                )
-                        )
-                );
+            Long userId = (userDetails != null && userDetails.getId() != null)
+                    ? userDetails.getId()
+                    : null;
+            if (userId == null) {
+                log.info("[API] 비로그인 사용자 요청");
             } else {
-                log.info("[API] 비로그인 사용자 분석 요청");
-                return factCheckTriggerService.triggerSingleToRdsToNotLogin(youtubeUrl)
-                        .thenApply(result -> {
-                            if (result == null) {
-                                return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus())
-                                        .body(ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE.getMessage()));
-                            }
-                            if (result.getStatus() == AnalysisStatus.FAILED) {
-                                return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-                                        .body(ApiResponse.error("비디오 분석에 실패했습니다."));
-                            }
-                            return ResponseEntity.ok(ApiResponse.success("비디오 분석 결과", result));
-                        });
+                log.info("[API] 로그인 사용자 분석 요청 - User ID: {}", userId);
             }
+
+            Long analysisId = factCheckTriggerService.triggerAndReturnId(youtubeUrl, userId);
+            return CompletableFuture.completedFuture(
+                    ResponseEntity.ok(
+                            ApiResponse.success(
+                                    "비디오 분석이 성공적으로 요청되었습니다.",
+                                    new AnalysisStartResponse(analysisId, AnalysisStatus.PENDING)
+                            )
+                    )
+            );
+
         } catch (BusinessException e) {
             throw e; // 전역 예외 처리기로 위임
         } catch (Exception e) {
@@ -204,7 +196,6 @@ public class VideoAnalysisController {
             );
         }
     }
-
 
 
     @Operation(
