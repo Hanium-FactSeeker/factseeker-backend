@@ -43,7 +43,7 @@ public class FastApiBridgeService {
     /**
      * 스케줄 B: 매 6시간 간격 정각 + 10초에 FastAPI 호출 시작
      */
-    @Scheduled(cron = "30 0 0/6 * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "30 0 0/6 * * *", zone = "Asia/Seoul")
 
     public void callFastApiForTop10() {
         String tag = OffsetDateTime.now(KST).format(LOCK_FMT);
