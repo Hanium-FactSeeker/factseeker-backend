@@ -61,6 +61,11 @@ public class User extends BaseEntity {
 
   private boolean isCompleteProfile = false;
 
+  @Column(nullable = false)
+  private String gender;
+
+  @Column(name = "age_range", nullable = false)
+  private String ageRange;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<VideoAnalysis> videoAnalyses;
