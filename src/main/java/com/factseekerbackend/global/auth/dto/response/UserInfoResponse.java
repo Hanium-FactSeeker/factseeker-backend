@@ -15,6 +15,8 @@ public class UserInfoResponse {
   private Long id;
   private String loginId;
   private String fullname;
+  private String gender;
+  private String ageRange;
   private String phone;
   private String email;
   private Set<Role> roles;
@@ -27,6 +29,8 @@ public class UserInfoResponse {
         .id(user.getId())
         .loginId(user.getLoginId())
         .fullname(user.getFullName())
+        .gender(user.getGender())
+        .ageRange(user.getAgeRange())
         .phone(user.getPhone())
         .email(user.getEmail())
         .roles(user.getRoles())
