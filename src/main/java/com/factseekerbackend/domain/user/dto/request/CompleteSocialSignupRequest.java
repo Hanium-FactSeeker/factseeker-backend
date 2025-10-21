@@ -9,5 +9,6 @@ public class CompleteSocialSignupRequest {
   private String fullname;
   private String gender;
   private String ageRange;
+  private String email;
   private String phone;
 }
