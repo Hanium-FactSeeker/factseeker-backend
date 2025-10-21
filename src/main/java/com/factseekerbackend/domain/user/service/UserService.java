@@ -110,7 +110,7 @@ public class UserService {
         .phone(request.getPhone())
         .gender(request.getGender())
         .ageRange(request.getAgeRange())
-        .email(request.getEmail())
+        .email(socialUserInfo.getEmail())
         .roles(Set.of(Role.USER))
         .provider(socialUserInfo.getProvider())
         .providerId(socialUserInfo.getProviderId())
