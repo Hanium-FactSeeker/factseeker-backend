@@ -48,6 +48,7 @@ public class FastApiBridgeService {
 
 
 
+
     public void callFastApiForTop10() {
         String tag = OffsetDateTime.now(KST).format(LOCK_FMT);
 
