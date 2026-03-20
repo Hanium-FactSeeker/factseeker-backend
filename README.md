@@ -18,6 +18,11 @@
 
 ---
 
+## ERD
+![ERD](./images/erd.png)
+
+## 아키텍쳐
+![아키텍쳐](./images/architecture.png)
 ## 🔍 주요 기능
 
 - ✅**뉴스 및 콘텐츠의 신뢰도 자동 평가**
